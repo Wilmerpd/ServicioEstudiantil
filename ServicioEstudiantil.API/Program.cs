@@ -1,4 +1,9 @@
+using Microsoft.EntityFrameworkCore;
+using ServicioEstudiantil.Infrastructure.Data;
+
 var builder = WebApplication.CreateBuilder(args);
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseSqlServer("Server=(localdb)\\mssqllocaldb;Database=ServicioEstudiantilDB;Trusted_Connection=True;"));
 
 // Add services to the container.
 
