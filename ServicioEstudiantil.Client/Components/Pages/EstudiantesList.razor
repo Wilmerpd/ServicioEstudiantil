@@ -1,0 +1,57 @@
+﻿@page "/estudiantes"
+@using ServicioEstudiantil.Core.DTOs
+@using ServicioEstudiantil.Client.Contracts
+@inject IEstudianteService EstudianteService
+
+<h3>Listado de Estudiantes</h3>
+
+@if (estudiantes == null)
+{
+    <p><em>Cargando datos desde la base de datos...</em></p>
+}
+else if (!estudiantes.Any())
+{
+    <div class="alert alert-info">No hay estudiantes registrados todavía.</div>
+}
+else
+{
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Matrícula</th>
+                <th>Nombres</th>
+                <th>Apellidos</th>
+                <th>Correo</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var est in estudiantes)
+            {
+                <tr>
+                    <td>@est.Matricula</td>
+                    <td>@est.Nombres</td>
+                    <td>@est.Apellidos</td>
+                    <td>@est.CorreoInstitucional</td>
+                    <td>@(est.EstaActivo ? "Activo" : "Inactivo")</td>
+                    <td>
+                        <button class="btn btn-primary btn-sm">Editar</button>
+                        <button class="btn btn-danger btn-sm">Eliminar</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<EstudianteDTO>? estudiantes;
+
+    // Este método se ejecuta automáticamente cuando la pantalla carga
+    protected override async Task OnInitializedAsync()
+    {
+        // Llama al servicio que creamos hoy, el cual hace la petición a la API
+        estudiantes = await EstudianteService.ObtenerEstudiantesAsync();
+    }
+}
