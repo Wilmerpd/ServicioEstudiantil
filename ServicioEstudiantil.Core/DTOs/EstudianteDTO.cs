@@ -4,8 +4,10 @@
     {
         public int Id { get; set; }
         public string Matricula { get; set; } = string.Empty;
-        public string NombreCompleto { get; set; } = string.Empty; // Unimos nombres y apellidos
+        public string Nombres { get; set; } = string.Empty;
+        public string Apellidos { get; set; } = string.Empty;
         public string CorreoInstitucional { get; set; } = string.Empty;
-        public string NombreTitulacion { get; set; } = string.Empty;
+        public bool EstaActivo { get; set; } = true;
+        public int TitulacionId { get; set; }
     }
 }
