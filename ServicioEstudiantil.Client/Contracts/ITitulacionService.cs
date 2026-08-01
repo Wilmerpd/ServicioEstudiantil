@@ -6,5 +6,9 @@ namespace ServicioEstudiantil.Client.Contracts
     {
         Task<List<TitulacionDTO>?> ObtenerTitulacionesAsync();
         Task<TitulacionDTO?> ObtenerTitulacionPorIdAsync(int id);
+
+        Task<bool> CrearTitulacionAsync(TitulacionInputDTO titulacion);
+        Task<bool> ActualizarTitulacionAsync(TitulacionInputDTO titulacion);
+        Task<bool> EliminarTitulacionAsync(int id);
     }
 }

@@ -9,7 +9,7 @@ builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
 // 2. Registro del HttpClient base
-builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(MyConstant.BaseApiUrl) });
+builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri("https://localhost:7097") });
 
 // 3. Registro de las extensiones (Las clases de la foto del profesor)
 builder.Services.AddScoped<HttpClientService>();

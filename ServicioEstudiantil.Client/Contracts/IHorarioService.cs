@@ -6,5 +6,8 @@ namespace ServicioEstudiantil.Client.Contracts
     {
         Task<List<HorarioDTO>?> ObtenerHorariosAsync();
         Task<HorarioDTO?> ObtenerHorarioPorIdAsync(int id);
+        Task<bool> CrearHorarioAsync(HorarioInputDTO horario);
+        Task<bool> ActualizarHorarioAsync(HorarioInputDTO horario);
+        Task<bool> EliminarHorarioAsync(int id);
     }
 }

@@ -22,5 +22,27 @@ namespace ServicioEstudiantil.Client.Services
         {
             return await _httpService.GetAsync<ProfesorDTO>($"profesores/{id}");
         }
+        public async Task<bool> CrearProfesorAsync(ProfesorInputDTO profesor)
+        {
+            var response = await _httpService.PostAsync<ProfesorInputDTO>("profesores", profesor);
+            return response != null;
+        }
+
+        public async Task<bool> ActualizarProfesorAsync(ProfesorInputDTO profesor)
+        {
+            // Usamos el PutAsync que ya ajustamos en el HttpClientService
+            var response = await _httpService.PutAsync<object>($"profesores/{profesor.Id}", profesor);
+
+            // Si llegó hasta aquí sin romperse, la actualización fue exitosa
+            return true;
+        }
+
+        public async Task<bool> EliminarProfesorAsync(int id)
+        {
+            var response = await _httpService.DeleteAsync<object>($"profesores/{id}");
+
+            // Si la petición se completó, devolvemos true para que la interfaz limpie y recargue
+            return true;
+        }
     }
 }

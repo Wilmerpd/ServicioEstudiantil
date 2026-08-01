@@ -22,5 +22,22 @@ namespace ServicioEstudiantil.Client.Services
         {
             return await _httpService.GetAsync<HorarioDTO>($"horarios/{id}");
         }
+        public async Task<bool> CrearHorarioAsync(HorarioInputDTO horario)
+        {
+            var response = await _httpService.PostAsync<HorarioInputDTO>("horarios", horario);
+            return response != null;
+        }
+
+        public async Task<bool> ActualizarHorarioAsync(HorarioInputDTO horario)
+        {
+            var response = await _httpService.PutAsync<HorarioInputDTO>($"horarios/{horario.Id}", horario);
+            return true;
+        }
+
+        public async Task<bool> EliminarHorarioAsync(int id)
+        {
+            var response = await _httpService.DeleteAsync<bool>($"horarios/{id}");
+            return true;
+        }
     }
 }

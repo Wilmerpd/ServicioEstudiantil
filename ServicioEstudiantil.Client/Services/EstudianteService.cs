@@ -22,5 +22,24 @@ namespace ServicioEstudiantil.Client.Services
         {
             return await _httpService.GetAsync<EstudianteDTO>($"estudiantes/{id}");
         }
+        // (Debajo de tus métodos Obtener...)
+
+        public async Task<bool> CrearEstudianteAsync(EstudianteDTO estudiante)
+        {
+            var response = await _httpService.PostAsync<EstudianteDTO>("estudiantes", estudiante);
+            return response != null;
+        }
+
+        public async Task<bool> ActualizarEstudianteAsync(EstudianteDTO estudiante)
+        {
+            var response = await _httpService.PutAsync<EstudianteDTO>($"estudiantes/{estudiante.Id}", estudiante);
+            return true;
+        }
+
+        public async Task<bool> EliminarEstudianteAsync(int id)
+        {
+            var response = await _httpService.DeleteAsync<bool>($"estudiantes/{id}");
+            return true;
+        }
     }
 }

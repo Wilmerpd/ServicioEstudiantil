@@ -1,57 +1,255 @@
-﻿@page "/estudiantes"
-@using ServicioEstudiantil.Core.DTOs
-@using ServicioEstudiantil.Client.Contracts
+@page "/estudiantes"
+@rendermode InteractiveServer
 @inject IEstudianteService EstudianteService
+@inject ITitulacionService TitulacionService
 
-<h3>Listado de Estudiantes</h3>
+<PageTitle>Estudiantes</PageTitle>
+
+<div class="page-header">
+    <div>
+        <h1>Estudiantes</h1>
+        <p class="page-subtitle">Listado de estudiantes matriculados en la institución.</p>
+    </div>
+    <button class="btn btn-primary" @onclick="AbrirModalCrear" disabled="@(!PuedeCrear)">
+        <span>+</span> Nuevo estudiante
+    </button>
+</div>
+
+<AlertBanner Mensaje="@mensajeAlerta" Tipo="@tipoAlerta" OnClose="@(() => mensajeAlerta = null)" />
+
+@if (!PuedeCrear && titulaciones != null)
+{
+    <div class="empty-state">
+        <p>Necesitas al menos una <strong>titulación</strong> registrada antes de poder crear estudiantes.</p>
+        <a class="btn btn-outline-primary" href="/titulaciones">Ir a Titulaciones</a>
+    </div>
+}
 
 @if (estudiantes == null)
 {
-    <p><em>Cargando datos desde la base de datos...</em></p>
+    <div class="loading-box"><em>Cargando datos desde la base de datos...</em></div>
 }
 else if (!estudiantes.Any())
 {
-    <div class="alert alert-info">No hay estudiantes registrados todavía.</div>
+    <div class="empty-state">
+        <p>No hay estudiantes registrados todavía.</p>
+    </div>
 }
 else
 {
-    <table class="table table-striped">
-        <thead>
-            <tr>
-                <th>Matrícula</th>
-                <th>Nombres</th>
-                <th>Apellidos</th>
-                <th>Correo</th>
-                <th>Estado</th>
-                <th>Acciones</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var est in estudiantes)
-            {
+    <div class="table-card">
+        <table class="table table-app">
+            <thead>
                 <tr>
-                    <td>@est.Matricula</td>
-                    <td>@est.Nombres</td>
-                    <td>@est.Apellidos</td>
-                    <td>@est.CorreoInstitucional</td>
-                    <td>@(est.EstaActivo ? "Activo" : "Inactivo")</td>
-                    <td>
-                        <button class="btn btn-primary btn-sm">Editar</button>
-                        <button class="btn btn-danger btn-sm">Eliminar</button>
-                    </td>
+                    <th>Matrícula</th>
+                    <th>Nombres</th>
+                    <th>Apellidos</th>
+                    <th>Correo</th>
+                    <th>Titulación</th>
+                    <th>Estado</th>
+                    <th class="text-end">Acciones</th>
                 </tr>
-            }
-        </tbody>
-    </table>
+            </thead>
+            <tbody>
+                @foreach (var est in estudiantes)
+                {
+                    <tr>
+                        <td><span class="badge-codigo">@est.Matricula</span></td>
+                        <td>@est.Nombres</td>
+                        <td>@est.Apellidos</td>
+                        <td>@est.CorreoInstitucional</td>
+                        <td>@NombreTitulacion(est.TitulacionId)</td>
+                        <td>
+                            <span class="badge-estado @(est.EstaActivo ? "badge-activo" : "badge-inactivo")">
+                                @(est.EstaActivo ? "Activo" : "Inactivo")
+                            </span>
+                        </td>
+                        <td class="text-end">
+                            <button class="btn btn-sm btn-outline-primary" @onclick="() => AbrirModalEditar(est)">Editar</button>
+                            <button class="btn btn-sm btn-outline-danger" @onclick="() => AbrirConfirmEliminar(est)">Eliminar</button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
 }
+
+<ModalDialog IsVisible="mostrarModal" IsVisibleChanged="@(v => mostrarModal = v)"
+             Titulo="@(editando ? "Editar estudiante" : "Nuevo estudiante")" Icon="🧑‍🎓">
+    <ChildContent>
+        <EditForm Model="formModel" OnValidSubmit="Guardar">
+            <DataAnnotationsValidator />
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Matrícula</label>
+                    <InputText class="form-control" @bind-Value="formModel.Matricula" placeholder="Ej. 2025-0142" />
+                </div>
+                <div class="form-group">
+                    <label>Titulación</label>
+                    <InputSelect class="form-control" @bind-Value="formModel.TitulacionId">
+                        <option value="0">Selecciona una titulación</option>
+                        @if (titulaciones != null)
+                        {
+                            @foreach (var t in titulaciones)
+                            {
+                                <option value="@t.Id">@t.Nombre</option>
+                            }
+                        }
+                    </InputSelect>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Nombres</label>
+                    <InputText class="form-control" @bind-Value="formModel.Nombres" placeholder="Nombres" />
+                </div>
+                <div class="form-group">
+                    <label>Apellidos</label>
+                    <InputText class="form-control" @bind-Value="formModel.Apellidos" placeholder="Apellidos" />
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Correo institucional</label>
+                <InputText class="form-control" @bind-Value="formModel.CorreoInstitucional" placeholder="correo@institucion.edu" />
+            </div>
+            <div class="form-check-row">
+                <InputCheckbox class="form-check-input" id="estaActivo" @bind-Value="formModel.EstaActivo" />
+                <label for="estaActivo">Estudiante activo</label>
+            </div>
+            @if (!string.IsNullOrEmpty(errorForm))
+            {
+                <div class="form-error">@errorForm</div>
+            }
+            <div class="modal-actions-inline">
+                <button type="button" class="btn btn-outline-secondary" @onclick="CerrarModal">Cancelar</button>
+                <button type="submit" class="btn btn-primary" disabled="@guardando">
+                    @(guardando ? "Guardando..." : "Guardar")
+                </button>
+            </div>
+        </EditForm>
+    </ChildContent>
+</ModalDialog>
+
+<ConfirmDialog IsVisible="mostrarConfirm" IsVisibleChanged="@(v => mostrarConfirm = v)"
+               Titulo="Eliminar estudiante"
+               Mensaje="@($"¿Deseas eliminar a '{estudianteAEliminar?.Nombres} {estudianteAEliminar?.Apellidos}'? Esta acción no se puede deshacer.")"
+               OnConfirm="EliminarConfirmado" />
 
 @code {
     private List<EstudianteDTO>? estudiantes;
+    private List<TitulacionDTO>? titulaciones;
+    private EstudianteDTO formModel = new();
+    private bool mostrarModal = false;
+    private bool mostrarConfirm = false;
+    private bool editando = false;
+    private bool guardando = false;
+    private EstudianteDTO? estudianteAEliminar;
+    private string? errorForm;
+    private string? mensajeAlerta;
+    private string tipoAlerta = "success";
+
+    private bool PuedeCrear => titulaciones?.Any() ?? false;
 
     // Este método se ejecuta automáticamente cuando la pantalla carga
     protected override async Task OnInitializedAsync()
     {
+        await CargarDatos();
+    }
+
+    private async Task CargarDatos()
+    {
         // Llama al servicio que creamos hoy, el cual hace la petición a la API
         estudiantes = await EstudianteService.ObtenerEstudiantesAsync();
+        titulaciones = await TitulacionService.ObtenerTitulacionesAsync();
+    }
+
+    private string NombreTitulacion(int titulacionId)
+    {
+        return titulaciones?.FirstOrDefault(t => t.Id == titulacionId)?.Nombre ?? "—";
+    }
+
+    private void AbrirModalCrear()
+    {
+        formModel = new EstudianteDTO { EstaActivo = true };
+        editando = false;
+        errorForm = null;
+        mostrarModal = true;
+    }
+
+    private void AbrirModalEditar(EstudianteDTO p)
+    {
+        formModel = new EstudianteDTO
+            {
+                Id = p.Id,
+                Matricula = p.Matricula,
+                Nombres = p.Nombres,
+                Apellidos = p.Apellidos
+            };
+        editando = true;
+        errorForm = null;
+        mostrarModal = true;
+    }
+
+    private void CerrarModal()
+    {
+        mostrarModal = false;
+    }
+
+    private void AbrirConfirmEliminar(EstudianteDTO est)
+    {
+        estudianteAEliminar = est;
+        mostrarConfirm = true;
+    }
+
+    private async Task Guardar()
+    {
+        if (string.IsNullOrWhiteSpace(formModel.Matricula) || string.IsNullOrWhiteSpace(formModel.Nombres)
+            || string.IsNullOrWhiteSpace(formModel.Apellidos) || formModel.TitulacionId == 0)
+        {
+            errorForm = "Matrícula, nombres, apellidos y titulación son obligatorios.";
+            return;
+        }
+
+        guardando = true;
+        errorForm = null;
+        bool exito;
+
+        if (editando)
+        {
+            exito = await EstudianteService.ActualizarEstudianteAsync(formModel);
+        }
+        else
+        {
+            exito = await EstudianteService.CrearEstudianteAsync(formModel);
+        }
+
+        guardando = false;
+
+        if (exito)
+        {
+            mostrarModal = false;
+            mensajeAlerta = editando ? "Estudiante actualizado correctamente." : "Estudiante creado correctamente.";
+            tipoAlerta = "success";
+            await CargarDatos();
+        }
+        else
+        {
+            errorForm = "Ocurrió un error al guardar. Verifica los datos e intenta de nuevo.";
+        }
+    }
+
+    private async Task EliminarConfirmado()
+    {
+        if (estudianteAEliminar == null) return;
+
+        var exito = await EstudianteService.EliminarEstudianteAsync(estudianteAEliminar!.Id);
+        mensajeAlerta = exito ? "Estudiante eliminado." : "No se pudo eliminar el estudiante.";
+        tipoAlerta = exito ? "success" : "danger";
+
+        if (exito)
+        {
+            await CargarDatos();
+        }
     }
 }

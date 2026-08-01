@@ -1,0 +1,48 @@
+@if (IsVisible)
+{
+    <div class="modal-backdrop-custom" @onclick="CerrarSiTocaFondo">
+        <div class="modal-dialog-custom modal-@Size" @onclick:stopPropagation="true">
+            <div class="modal-header-custom">
+                <div class="modal-header-text">
+                    <span class="modal-icon">@Icon</span>
+                    <h4>@Titulo</h4>
+                </div>
+                <button type="button" class="modal-close-btn" @onclick="Cerrar" title="Cerrar">&times;</button>
+            </div>
+            <div class="modal-body-custom">
+                @ChildContent
+            </div>
+            @if (Footer is not null)
+            {
+                <div class="modal-footer-custom">
+                    @Footer
+                </div>
+            }
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public bool IsVisible { get; set; }
+    [Parameter] public EventCallback<bool> IsVisibleChanged { get; set; }
+    [Parameter] public string Titulo { get; set; } = string.Empty;
+    [Parameter] public string Icon { get; set; } = string.Empty;
+    [Parameter] public string Size { get; set; } = "md"; // sm | md | lg
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public RenderFragment? Footer { get; set; }
+    [Parameter] public bool CerrarAlTocarFondo { get; set; } = true;
+
+    private async Task Cerrar()
+    {
+        IsVisible = false;
+        await IsVisibleChanged.InvokeAsync(false);
+    }
+
+    private async Task CerrarSiTocaFondo()
+    {
+        if (CerrarAlTocarFondo)
+        {
+            await Cerrar();
+        }
+    }
+}

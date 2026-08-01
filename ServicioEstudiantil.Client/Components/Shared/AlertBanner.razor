@@ -1,0 +1,20 @@
+@if (!string.IsNullOrEmpty(Mensaje))
+{
+    <div class="alert-banner alert-banner-@Tipo">
+        <span class="alert-banner-icon">@(Tipo == "success" ? "✅" : Tipo == "danger" ? "⛔" : "ℹ️")</span>
+        <span>@Mensaje</span>
+        <button class="alert-banner-close" @onclick="Cerrar">&times;</button>
+    </div>
+}
+
+@code {
+    [Parameter] public string? Mensaje { get; set; }
+    [Parameter] public string Tipo { get; set; } = "success"; // success | danger | info
+    [Parameter] public EventCallback OnClose { get; set; }
+
+    private async Task Cerrar()
+    {
+        Mensaje = null;
+        await OnClose.InvokeAsync();
+    }
+}

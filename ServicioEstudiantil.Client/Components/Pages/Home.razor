@@ -1,7 +1,122 @@
-﻿@page "/"
+@page "/"
+@rendermode InteractiveServer
+@inject IEstudianteService EstudianteService
+@inject IProfesorService ProfesorService
+@inject IAsignaturaService AsignaturaService
+@inject IHorarioService HorarioService
+@inject ITitulacionService TitulacionService
+@using ServicioEstudiantil.Client.Contracts
+@using ServicioEstudiantil.Core.DTOs
 
-<PageTitle>Home</PageTitle>
+<PageTitle>Servicio Estudiantil</PageTitle>
 
-<h1>Hello, world!</h1>
+<div class="dashboard-hero">
+    <div>
+        <h1>Panel de Servicio Estudiantil</h1>
+        <p class="page-subtitle">Resumen general de la información académica registrada en el sistema.</p>
+    </div>
+</div>
 
-Welcome to your new app.
+@if (cargando)
+{
+    <div class="loading-box"><em>Cargando resumen...</em></div>
+}
+else
+{
+    <div class="stats-grid">
+        <a class="stat-card stat-blue" href="/estudiantes">
+            <span class="stat-icon">🧑‍🎓</span>
+            <span class="stat-number">@totalEstudiantes</span>
+            <span class="stat-label">Estudiantes</span>
+        </a>
+        <a class="stat-card stat-green" href="/profesores">
+            <span class="stat-icon">👨‍🏫</span>
+            <span class="stat-number">@totalProfesores</span>
+            <span class="stat-label">Profesores</span>
+        </a>
+        <a class="stat-card stat-purple" href="/asignaturas">
+            <span class="stat-icon">📚</span>
+            <span class="stat-number">@totalAsignaturas</span>
+            <span class="stat-label">Asignaturas</span>
+        </a>
+        <a class="stat-card stat-orange" href="/horarios">
+            <span class="stat-icon">🕒</span>
+            <span class="stat-number">@totalHorarios</span>
+            <span class="stat-label">Horarios</span>
+        </a>
+        <a class="stat-card stat-teal" href="/titulaciones">
+            <span class="stat-icon">🎓</span>
+            <span class="stat-number">@totalTitulaciones</span>
+            <span class="stat-label">Titulaciones</span>
+        </a>
+    </div>
+
+    <div class="quick-actions">
+        <h2>Accesos rápidos</h2>
+        <div class="quick-actions-grid">
+            <a class="quick-action-card" href="/estudiantes">
+                <span>🧑‍🎓</span>
+                <div>
+                    <strong>Gestionar estudiantes</strong>
+                    <p>Registrar, editar y dar de baja estudiantes.</p>
+                </div>
+            </a>
+            <a class="quick-action-card" href="/profesores">
+                <span>👨‍🏫</span>
+                <div>
+                    <strong>Gestionar profesores</strong>
+                    <p>Administrar el cuerpo docente y sus departamentos.</p>
+                </div>
+            </a>
+            <a class="quick-action-card" href="/asignaturas">
+                <span>📚</span>
+                <div>
+                    <strong>Gestionar asignaturas</strong>
+                    <p>Asociar materias a titulaciones y profesores.</p>
+                </div>
+            </a>
+            <a class="quick-action-card" href="/horarios">
+                <span>🕒</span>
+                <div>
+                    <strong>Gestionar horarios</strong>
+                    <p>Definir día, hora y aula de cada clase.</p>
+                </div>
+            </a>
+            <a class="quick-action-card" href="/titulaciones">
+                <span>🎓</span>
+                <div>
+                    <strong>Gestionar titulaciones</strong>
+                    <p>Programas académicos ofrecidos.</p>
+                </div>
+            </a>
+        </div>
+    </div>
+}
+
+@code {
+    private bool cargando = true;
+    private int totalEstudiantes;
+    private int totalProfesores;
+    private int totalAsignaturas;
+    private int totalHorarios;
+    private int totalTitulaciones;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var estudiantesTask = EstudianteService.ObtenerEstudiantesAsync();
+        var profesoresTask = ProfesorService.ObtenerProfesoresAsync();
+        var asignaturasTask = AsignaturaService.ObtenerAsignaturasAsync();
+        var horariosTask = HorarioService.ObtenerHorariosAsync();
+        var titulacionesTask = TitulacionService.ObtenerTitulacionesAsync();
+
+        await Task.WhenAll(estudiantesTask, profesoresTask, asignaturasTask, horariosTask, titulacionesTask);
+
+        totalEstudiantes = estudiantesTask.Result?.Count ?? 0;
+        totalProfesores = profesoresTask.Result?.Count ?? 0;
+        totalAsignaturas = asignaturasTask.Result?.Count ?? 0;
+        totalHorarios = horariosTask.Result?.Count ?? 0;
+        totalTitulaciones = titulacionesTask.Result?.Count ?? 0;
+
+        cargando = false;
+    }
+}

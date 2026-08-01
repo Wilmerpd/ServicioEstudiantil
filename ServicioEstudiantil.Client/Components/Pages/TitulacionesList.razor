@@ -1,0 +1,193 @@
+@page "/titulaciones"
+@rendermode InteractiveServer
+@inject ITitulacionService TitulacionService
+
+<PageTitle>Titulaciones</PageTitle>
+
+<div class="page-header">
+    <div>
+        <h1>Titulaciones</h1>
+        <p class="page-subtitle">Programas académicos que ofrece la institución.</p>
+    </div>
+    <button class="btn btn-primary" @onclick="AbrirModalCrear">
+        <span>+</span> Nueva titulación
+    </button>
+</div>
+
+<AlertBanner Mensaje="@mensajeAlerta" Tipo="@tipoAlerta" OnClose="@(() => mensajeAlerta = null)" />
+
+@if (titulaciones == null)
+{
+    <div class="loading-box"><em>Cargando titulaciones...</em></div>
+}
+else if (!titulaciones.Any())
+{
+    <div class="empty-state">
+        <p>No hay titulaciones registradas todavía.</p>
+        <button class="btn btn-primary" @onclick="AbrirModalCrear">Registrar la primera titulación</button>
+    </div>
+}
+else
+{
+    <div class="table-card">
+        <table class="table table-app">
+            <thead>
+                <tr>
+                    <th>Código</th>
+                    <th>Nombre</th>
+                    <th class="text-end">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var t in titulaciones)
+                {
+                    <tr>
+                        <td><span class="badge-codigo">@t.Codigo</span></td>
+                        <td>@t.Nombre</td>
+                        <td class="text-end">
+                            <button class="btn btn-sm btn-outline-primary" @onclick="() => AbrirModalEditar(t)">Editar</button>
+                            <button class="btn btn-sm btn-outline-danger" @onclick="() => AbrirConfirmEliminar(t)">Eliminar</button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+<ModalDialog IsVisible="mostrarModal" IsVisibleChanged="@(v => mostrarModal = v)"
+             Titulo="@(editando ? "Editar titulación" : "Nueva titulación")" Icon="🎓">
+    <ChildContent>
+        <EditForm Model="formModel" OnValidSubmit="Guardar">
+            <DataAnnotationsValidator />
+            <div class="form-group">
+                <label>Código</label>
+                <InputText class="form-control" @bind-Value="formModel.Codigo" placeholder="Ej. ISW-2025" />
+            </div>
+            <div class="form-group">
+                <label>Nombre de la titulación</label>
+                <InputText class="form-control" @bind-Value="formModel.Nombre" placeholder="Ej. Ingeniería en Sistemas" />
+            </div>
+            @if (!string.IsNullOrEmpty(errorForm))
+            {
+                <div class="form-error">@errorForm</div>
+            }
+            <div class="modal-actions-inline">
+                <button type="button" class="btn btn-outline-secondary" @onclick="CerrarModal">Cancelar</button>
+                <button type="submit" class="btn btn-primary" disabled="@guardando">
+                    @(guardando ? "Guardando..." : "Guardar")
+                </button>
+            </div>
+        </EditForm>
+    </ChildContent>
+</ModalDialog>
+
+<ConfirmDialog IsVisible="mostrarConfirm" IsVisibleChanged="@(v => mostrarConfirm = v)"
+               Titulo="Eliminar titulación"
+               Mensaje="@($"¿Deseas eliminar la titulación '{tituloAEliminar?.Nombre}'? Esta acción no se puede deshacer.")"
+               OnConfirm="EliminarConfirmado" />
+
+@code {
+    private List<TitulacionDTO>? titulaciones;
+    private TitulacionInputDTO formModel = new();
+    private bool mostrarModal = false;
+    private bool mostrarConfirm = false;
+    private bool editando = false;
+    private bool guardando = false;
+    private int idEditando = 0;
+    private TitulacionDTO? tituloAEliminar;
+    private string? errorForm;
+    private string? mensajeAlerta;
+    private string tipoAlerta = "success";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CargarDatos();
+    }
+
+    private async Task CargarDatos()
+    {
+        titulaciones = await TitulacionService.ObtenerTitulacionesAsync();
+    }
+
+    private void AbrirModalCrear()
+    {
+        formModel = new TitulacionInputDTO();
+        editando = false;
+        errorForm = null;
+        mostrarModal = true;
+    }
+
+    private void AbrirModalEditar(TitulacionDTO p)
+    {
+        formModel = new TitulacionInputDTO
+            {
+                Id = p.Id,
+                Nombre = p.Nombre
+            };
+        editando = true;
+        errorForm = null;
+        mostrarModal = true;
+    }
+
+    private void CerrarModal()
+    {
+        mostrarModal = false;
+    }
+
+    private void AbrirConfirmEliminar(TitulacionDTO t)
+    {
+        tituloAEliminar = t;
+        mostrarConfirm = true;
+    }
+
+    private async Task Guardar()
+    {
+        if (string.IsNullOrWhiteSpace(formModel.Nombre) || string.IsNullOrWhiteSpace(formModel.Codigo))
+        {
+            errorForm = "El código y el nombre son obligatorios.";
+            return;
+        }
+
+        guardando = true;
+        errorForm = null;
+        bool exito;
+
+        if (editando)
+        {
+            exito = await TitulacionService.ActualizarTitulacionAsync(formModel);
+        }
+        else
+        {
+            exito = await TitulacionService.CrearTitulacionAsync(formModel);
+        }
+
+        guardando = false;
+
+        if (exito)
+        {
+            mostrarModal = false;
+            mensajeAlerta = editando ? "Titulación actualizada correctamente." : "Titulación creada correctamente.";
+            tipoAlerta = "success";
+            await CargarDatos();
+        }
+        else
+        {
+            errorForm = "Ocurrió un error al guardar. Verifica los datos e intenta de nuevo.";
+        }
+    }
+
+    private async Task EliminarConfirmado()
+    {
+        if (tituloAEliminar == null) return;
+
+        var exito = await TitulacionService.EliminarTitulacionAsync(tituloAEliminar.Id);
+        mensajeAlerta = exito ? "Titulación eliminada." : "No se pudo eliminar la titulación.";
+        tipoAlerta = exito ? "success" : "danger";
+
+        if (exito)
+        {
+            await CargarDatos();
+        }
+    }
+}

@@ -1,0 +1,31 @@
+<ModalDialog IsVisible="IsVisible" IsVisibleChanged="IsVisibleChanged" Titulo="@Titulo" Icon="⚠️" Size="sm">
+    <ChildContent>
+        <p class="confirm-message">@Mensaje</p>
+    </ChildContent>
+    <Footer>
+        <button class="btn btn-outline-secondary" @onclick="Cancelar">Cancelar</button>
+        <button class="btn btn-danger" @onclick="Confirmar">@TextoBotonConfirmar</button>
+    </Footer>
+</ModalDialog>
+
+@code {
+    [Parameter] public bool IsVisible { get; set; }
+    [Parameter] public EventCallback<bool> IsVisibleChanged { get; set; }
+    [Parameter] public string Titulo { get; set; } = "Confirmar acción";
+    [Parameter] public string Mensaje { get; set; } = "¿Está seguro de que desea continuar?";
+    [Parameter] public string TextoBotonConfirmar { get; set; } = "Eliminar";
+    [Parameter] public EventCallback OnConfirm { get; set; }
+
+    private async Task Confirmar()
+    {
+        IsVisible = false;
+        await IsVisibleChanged.InvokeAsync(false);
+        await OnConfirm.InvokeAsync();
+    }
+
+    private async Task Cancelar()
+    {
+        IsVisible = false;
+        await IsVisibleChanged.InvokeAsync(false);
+    }
+}

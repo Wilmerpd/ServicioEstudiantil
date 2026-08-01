@@ -4,6 +4,7 @@ namespace ServicioEstudiantil.Core.DTOs
     // El ProfesorDTO normal se sigue usando para leer (GET).
     public class ProfesorInputDTO
     {
+        public int Id { get; set; }
         public string Nombres { get; set; } = string.Empty;
         public string Apellidos { get; set; } = string.Empty;
         public string CorreoContacto { get; set; } = string.Empty;
