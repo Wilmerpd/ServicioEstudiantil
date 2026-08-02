@@ -17,7 +17,7 @@ namespace ServicioEstudiantil.Infrastructure.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "8.0.0")
+                .HasAnnotation("ProductVersion", "8.0.8")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
@@ -30,26 +30,59 @@ namespace ServicioEstudiantil.Infrastructure.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<string>("Codigo")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<int>("Creditos")
                         .HasColumnType("int");
+
+                    b.Property<string>("Departamento")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Nombre")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<int>("ProfesorId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("TitulacionId")
+                    b.Property<int?>("TitulacionId")
                         .HasColumnType("int");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("ProfesorId");
-
                     b.HasIndex("TitulacionId");
 
                     b.ToTable("Asignaturas");
+                });
+
+            modelBuilder.Entity("ServicioEstudiantil.Core.Entities.Calificacion", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("AsignaturaId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("EstudianteId")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("Nota")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("Periodo")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AsignaturaId");
+
+                    b.HasIndex("EstudianteId");
+
+                    b.ToTable("Calificaciones");
                 });
 
             modelBuilder.Entity("ServicioEstudiantil.Core.Entities.Estudiante", b =>
@@ -121,6 +154,36 @@ namespace ServicioEstudiantil.Infrastructure.Migrations
                     b.ToTable("Horarios");
                 });
 
+            modelBuilder.Entity("ServicioEstudiantil.Core.Entities.Matricula", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("AsignaturaId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("EstudianteId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("FechaInscripcion")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Periodo")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AsignaturaId");
+
+                    b.HasIndex("EstudianteId");
+
+                    b.ToTable("Matriculas");
+                });
+
             modelBuilder.Entity("ServicioEstudiantil.Core.Entities.Profesor", b =>
                 {
                     b.Property<int>("Id")
@@ -133,11 +196,15 @@ namespace ServicioEstudiantil.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("CorreoContacto")
+                    b.Property<string>("Correo")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Departamento")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Identificacion")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
@@ -173,21 +240,28 @@ namespace ServicioEstudiantil.Infrastructure.Migrations
 
             modelBuilder.Entity("ServicioEstudiantil.Core.Entities.Asignatura", b =>
                 {
-                    b.HasOne("ServicioEstudiantil.Core.Entities.Profesor", "Profesor")
+                    b.HasOne("ServicioEstudiantil.Core.Entities.Titulacion", null)
                         .WithMany("Asignaturas")
-                        .HasForeignKey("ProfesorId")
+                        .HasForeignKey("TitulacionId");
+                });
+
+            modelBuilder.Entity("ServicioEstudiantil.Core.Entities.Calificacion", b =>
+                {
+                    b.HasOne("ServicioEstudiantil.Core.Entities.Asignatura", "Asignatura")
+                        .WithMany()
+                        .HasForeignKey("AsignaturaId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("ServicioEstudiantil.Core.Entities.Titulacion", "Titulacion")
-                        .WithMany("Asignaturas")
-                        .HasForeignKey("TitulacionId")
+                    b.HasOne("ServicioEstudiantil.Core.Entities.Estudiante", "Estudiante")
+                        .WithMany()
+                        .HasForeignKey("EstudianteId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("Profesor");
+                    b.Navigation("Asignatura");
 
-                    b.Navigation("Titulacion");
+                    b.Navigation("Estudiante");
                 });
 
             modelBuilder.Entity("ServicioEstudiantil.Core.Entities.Estudiante", b =>
@@ -212,9 +286,23 @@ namespace ServicioEstudiantil.Infrastructure.Migrations
                     b.Navigation("Asignatura");
                 });
 
-            modelBuilder.Entity("ServicioEstudiantil.Core.Entities.Profesor", b =>
+            modelBuilder.Entity("ServicioEstudiantil.Core.Entities.Matricula", b =>
                 {
-                    b.Navigation("Asignaturas");
+                    b.HasOne("ServicioEstudiantil.Core.Entities.Asignatura", "Asignatura")
+                        .WithMany()
+                        .HasForeignKey("AsignaturaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ServicioEstudiantil.Core.Entities.Estudiante", "Estudiante")
+                        .WithMany()
+                        .HasForeignKey("EstudianteId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Asignatura");
+
+                    b.Navigation("Estudiante");
                 });
 
             modelBuilder.Entity("ServicioEstudiantil.Core.Entities.Titulacion", b =>

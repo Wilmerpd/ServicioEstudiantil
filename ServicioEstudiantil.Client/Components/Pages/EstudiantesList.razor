@@ -1,255 +1,176 @@
 @page "/estudiantes"
 @rendermode InteractiveServer
 @inject IEstudianteService EstudianteService
-@inject ITitulacionService TitulacionService
+@using ServicioEstudiantil.Client.Contracts
+@using ServicioEstudiantil.Core.Features.Estudiantes.Queries.GetEstudiantesList
+@using ServicioEstudiantil.Core.Features.Estudiantes.Commands.CreateEstudiante
+@using ServicioEstudiantil.Core.Features.Estudiantes.Commands.UpdateEstudiante
 
-<PageTitle>Estudiantes</PageTitle>
+<h3>Gestión de Estudiantes</h3>
 
-<div class="page-header">
-    <div>
-        <h1>Estudiantes</h1>
-        <p class="page-subtitle">Listado de estudiantes matriculados en la institución.</p>
+<!-- Formulario de Registro / Edición -->
+<div class="card mb-4 p-3 shadow-sm">
+    <h5>@(editandoId == 0 ? "Registrar Nuevo Estudiante" : $"Editando Estudiante ID: {editandoId}")</h5>
+    <div class="row g-3">
+        <div class="col-md-3">
+            <label class="form-label">Matrícula</label>
+            <input class="form-control" placeholder="Ej: 2026-0005" @bind="nuevoMatricula" />
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">Nombres</label>
+            <input class="form-control" placeholder="Nombres" @bind="nuevoNombres" />
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">Apellidos</label>
+            <input class="form-control" placeholder="Apellidos" @bind="nuevoApellidos" />
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">Correo Institucional</label>
+            <input class="form-control" placeholder="correo@unicda.edu.do" @bind="nuevoCorreo" />
+        </div>
     </div>
-    <button class="btn btn-primary" @onclick="AbrirModalCrear" disabled="@(!PuedeCrear)">
-        <span>+</span> Nuevo estudiante
-    </button>
+    <div class="mt-3">
+        <button type="button" class="btn btn-primary" @onclick="GuardarEstudiante">
+            @(editandoId == 0 ? "Guardar Estudiante" : "Actualizar Cambios")
+        </button>
+        @if (editandoId != 0)
+        {
+            <button type="button" class="btn btn-secondary ms-2" @onclick="CancelarEdicion">Cancelar</button>
+        }
+    </div>
 </div>
 
-<AlertBanner Mensaje="@mensajeAlerta" Tipo="@tipoAlerta" OnClose="@(() => mensajeAlerta = null)" />
-
-@if (!PuedeCrear && titulaciones != null)
+@if (!string.IsNullOrEmpty(mensajeFeedback))
 {
-    <div class="empty-state">
-        <p>Necesitas al menos una <strong>titulación</strong> registrada antes de poder crear estudiantes.</p>
-        <a class="btn btn-outline-primary" href="/titulaciones">Ir a Titulaciones</a>
-    </div>
+    <div class="alert alert-info">@mensajeFeedback</div>
 }
 
 @if (estudiantes == null)
 {
-    <div class="loading-box"><em>Cargando datos desde la base de datos...</em></div>
+    <p><em>Cargando estudiantes desde la base de datos...</em></p>
 }
 else if (!estudiantes.Any())
 {
-    <div class="empty-state">
-        <p>No hay estudiantes registrados todavía.</p>
-    </div>
+    <p>No hay estudiantes registrados en el sistema.</p>
 }
 else
 {
-    <div class="table-card">
-        <table class="table table-app">
-            <thead>
+    <table class="table table-striped align-middle">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Matrícula</th>
+                <th>Nombre Completo</th>
+                <th>Correo Institucional</th>
+                <th style="width: 180px;">Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var est in estudiantes)
+            {
                 <tr>
-                    <th>Matrícula</th>
-                    <th>Nombres</th>
-                    <th>Apellidos</th>
-                    <th>Correo</th>
-                    <th>Titulación</th>
-                    <th>Estado</th>
-                    <th class="text-end">Acciones</th>
+                    <td>@est.Id</td>
+                    <td>@est.Matricula</td>
+                    <td>@est.NombreCompleto</td>
+                    <td>@est.Correo</td>
+                    <td>
+                        <button type="button" class="btn btn-warning btn-sm me-1" @onclick="() => PrepararEdicion(est)">Editar</button>
+                        <button type="button" class="btn btn-danger btn-sm" @onclick="() => Eliminar(est.Id)">Eliminar</button>
+                    </td>
                 </tr>
-            </thead>
-            <tbody>
-                @foreach (var est in estudiantes)
-                {
-                    <tr>
-                        <td><span class="badge-codigo">@est.Matricula</span></td>
-                        <td>@est.Nombres</td>
-                        <td>@est.Apellidos</td>
-                        <td>@est.CorreoInstitucional</td>
-                        <td>@NombreTitulacion(est.TitulacionId)</td>
-                        <td>
-                            <span class="badge-estado @(est.EstaActivo ? "badge-activo" : "badge-inactivo")">
-                                @(est.EstaActivo ? "Activo" : "Inactivo")
-                            </span>
-                        </td>
-                        <td class="text-end">
-                            <button class="btn btn-sm btn-outline-primary" @onclick="() => AbrirModalEditar(est)">Editar</button>
-                            <button class="btn btn-sm btn-outline-danger" @onclick="() => AbrirConfirmEliminar(est)">Eliminar</button>
-                        </td>
-                    </tr>
-                }
-            </tbody>
-        </table>
-    </div>
+            }
+        </tbody>
+    </table>
 }
 
-<ModalDialog IsVisible="mostrarModal" IsVisibleChanged="@(v => mostrarModal = v)"
-             Titulo="@(editando ? "Editar estudiante" : "Nuevo estudiante")" Icon="🧑‍🎓">
-    <ChildContent>
-        <EditForm Model="formModel" OnValidSubmit="Guardar">
-            <DataAnnotationsValidator />
-            <div class="form-row">
-                <div class="form-group">
-                    <label>Matrícula</label>
-                    <InputText class="form-control" @bind-Value="formModel.Matricula" placeholder="Ej. 2025-0142" />
-                </div>
-                <div class="form-group">
-                    <label>Titulación</label>
-                    <InputSelect class="form-control" @bind-Value="formModel.TitulacionId">
-                        <option value="0">Selecciona una titulación</option>
-                        @if (titulaciones != null)
-                        {
-                            @foreach (var t in titulaciones)
-                            {
-                                <option value="@t.Id">@t.Nombre</option>
-                            }
-                        }
-                    </InputSelect>
-                </div>
-            </div>
-            <div class="form-row">
-                <div class="form-group">
-                    <label>Nombres</label>
-                    <InputText class="form-control" @bind-Value="formModel.Nombres" placeholder="Nombres" />
-                </div>
-                <div class="form-group">
-                    <label>Apellidos</label>
-                    <InputText class="form-control" @bind-Value="formModel.Apellidos" placeholder="Apellidos" />
-                </div>
-            </div>
-            <div class="form-group">
-                <label>Correo institucional</label>
-                <InputText class="form-control" @bind-Value="formModel.CorreoInstitucional" placeholder="correo@institucion.edu" />
-            </div>
-            <div class="form-check-row">
-                <InputCheckbox class="form-check-input" id="estaActivo" @bind-Value="formModel.EstaActivo" />
-                <label for="estaActivo">Estudiante activo</label>
-            </div>
-            @if (!string.IsNullOrEmpty(errorForm))
-            {
-                <div class="form-error">@errorForm</div>
-            }
-            <div class="modal-actions-inline">
-                <button type="button" class="btn btn-outline-secondary" @onclick="CerrarModal">Cancelar</button>
-                <button type="submit" class="btn btn-primary" disabled="@guardando">
-                    @(guardando ? "Guardando..." : "Guardar")
-                </button>
-            </div>
-        </EditForm>
-    </ChildContent>
-</ModalDialog>
-
-<ConfirmDialog IsVisible="mostrarConfirm" IsVisibleChanged="@(v => mostrarConfirm = v)"
-               Titulo="Eliminar estudiante"
-               Mensaje="@($"¿Deseas eliminar a '{estudianteAEliminar?.Nombres} {estudianteAEliminar?.Apellidos}'? Esta acción no se puede deshacer.")"
-               OnConfirm="EliminarConfirmado" />
-
 @code {
-    private List<EstudianteDTO>? estudiantes;
-    private List<TitulacionDTO>? titulaciones;
-    private EstudianteDTO formModel = new();
-    private bool mostrarModal = false;
-    private bool mostrarConfirm = false;
-    private bool editando = false;
-    private bool guardando = false;
-    private EstudianteDTO? estudianteAEliminar;
-    private string? errorForm;
-    private string? mensajeAlerta;
-    private string tipoAlerta = "success";
+    private List<EstudianteDto>? estudiantes;
 
-    private bool PuedeCrear => titulaciones?.Any() ?? false;
+    private int editandoId = 0;
+    private string nuevoMatricula = string.Empty;
+    private string nuevoNombres = string.Empty;
+    private string nuevoApellidos = string.Empty;
+    private string nuevoCorreo = string.Empty;
+    private string mensajeFeedback = string.Empty;
 
-    // Este método se ejecuta automáticamente cuando la pantalla carga
     protected override async Task OnInitializedAsync()
     {
-        await CargarDatos();
+        await CargarEstudiantes();
     }
 
-    private async Task CargarDatos()
+    private async Task CargarEstudiantes()
     {
-        // Llama al servicio que creamos hoy, el cual hace la petición a la API
         estudiantes = await EstudianteService.ObtenerEstudiantesAsync();
-        titulaciones = await TitulacionService.ObtenerTitulacionesAsync();
     }
 
-    private string NombreTitulacion(int titulacionId)
+    private async Task GuardarEstudiante()
     {
-        return titulaciones?.FirstOrDefault(t => t.Id == titulacionId)?.Nombre ?? "—";
-    }
-
-    private void AbrirModalCrear()
-    {
-        formModel = new EstudianteDTO { EstaActivo = true };
-        editando = false;
-        errorForm = null;
-        mostrarModal = true;
-    }
-
-    private void AbrirModalEditar(EstudianteDTO p)
-    {
-        formModel = new EstudianteDTO
-            {
-                Id = p.Id,
-                Matricula = p.Matricula,
-                Nombres = p.Nombres,
-                Apellidos = p.Apellidos
-            };
-        editando = true;
-        errorForm = null;
-        mostrarModal = true;
-    }
-
-    private void CerrarModal()
-    {
-        mostrarModal = false;
-    }
-
-    private void AbrirConfirmEliminar(EstudianteDTO est)
-    {
-        estudianteAEliminar = est;
-        mostrarConfirm = true;
-    }
-
-    private async Task Guardar()
-    {
-        if (string.IsNullOrWhiteSpace(formModel.Matricula) || string.IsNullOrWhiteSpace(formModel.Nombres)
-            || string.IsNullOrWhiteSpace(formModel.Apellidos) || formModel.TitulacionId == 0)
+        if (string.IsNullOrWhiteSpace(nuevoMatricula))
         {
-            errorForm = "Matrícula, nombres, apellidos y titulación son obligatorios.";
+            mensajeFeedback = "La matrícula es obligatoria.";
             return;
         }
 
-        guardando = true;
-        errorForm = null;
-        bool exito;
+        bool exito = false;
 
-        if (editando)
+        if (editandoId == 0)
         {
-            exito = await EstudianteService.ActualizarEstudianteAsync(formModel);
+            var command = new CreateEstudianteCommand(nuevoMatricula, nuevoNombres, nuevoApellidos, nuevoCorreo, 1);
+            exito = await EstudianteService.CrearEstudianteAsync(command);
+            mensajeFeedback = exito ? "Estudiante registrado correctamente." : "Error al registrar el estudiante.";
         }
         else
         {
-            exito = await EstudianteService.CrearEstudianteAsync(formModel);
+            var command = new UpdateEstudianteCommand(editandoId, nuevoMatricula, nuevoNombres, nuevoApellidos, nuevoCorreo, 1);
+            exito = await EstudianteService.ActualizarEstudianteAsync(editandoId, command);
+            mensajeFeedback = exito ? "Estudiante actualizado correctamente." : "Error al actualizar el estudiante.";
         }
-
-        guardando = false;
 
         if (exito)
         {
-            mostrarModal = false;
-            mensajeAlerta = editando ? "Estudiante actualizado correctamente." : "Estudiante creado correctamente.";
-            tipoAlerta = "success";
-            await CargarDatos();
-        }
-        else
-        {
-            errorForm = "Ocurrió un error al guardar. Verifica los datos e intenta de nuevo.";
+            LimpiarFormulario();
+            await CargarEstudiantes();
         }
     }
 
-    private async Task EliminarConfirmado()
+    private void PrepararEdicion(EstudianteDto est)
     {
-        if (estudianteAEliminar == null) return;
+        editandoId = est.Id;
+        nuevoMatricula = est.Matricula;
 
-        var exito = await EstudianteService.EliminarEstudianteAsync(estudianteAEliminar!.Id);
-        mensajeAlerta = exito ? "Estudiante eliminado." : "No se pudo eliminar el estudiante.";
-        tipoAlerta = exito ? "success" : "danger";
+        var partes = est.NombreCompleto.Split(' ', 2);
+        nuevoNombres = partes.Length > 0 ? partes[0] : string.Empty;
+        nuevoApellidos = partes.Length > 1 ? partes[1] : string.Empty;
+        nuevoCorreo = est.Correo;
+        mensajeFeedback = $"Editando al estudiante con ID: {est.Id}";
+    }
 
+    private void CancelarEdicion()
+    {
+        LimpiarFormulario();
+        mensajeFeedback = "Edición cancelada.";
+    }
+
+    private void LimpiarFormulario()
+    {
+        editandoId = 0;
+        nuevoMatricula = string.Empty;
+        nuevoNombres = string.Empty;
+        nuevoApellidos = string.Empty;
+        nuevoCorreo = string.Empty;
+    }
+
+    private async Task Eliminar(int id)
+    {
+        var exito = await EstudianteService.EliminarEstudianteAsync(id);
         if (exito)
         {
-            await CargarDatos();
+            mensajeFeedback = "Estudiante eliminado correctamente.";
+            await CargarEstudiantes();
+        }
+        else
+        {
+            mensajeFeedback = "Error al intentar eliminar el estudiante.";
         }
     }
 }

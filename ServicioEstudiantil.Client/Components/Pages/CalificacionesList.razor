@@ -1,0 +1,158 @@
+﻿@page "/calificaciones"
+@rendermode InteractiveServer
+@inject ICalificacionService CalificacionService
+@inject IEstudianteService EstudianteService
+@inject IAsignaturaService AsignaturaService
+@using ServicioEstudiantil.Client.Contracts
+@using ServicioEstudiantil.Core.DTOs
+@using ServicioEstudiantil.Core.Features.Calificaciones.Commands.CreateCalificacion
+@using ServicioEstudiantil.Core.Features.Estudiantes.Queries.GetEstudiantesList
+
+<h3>Gestión de Calificaciones</h3>
+
+<div class="card mb-4 p-3 shadow-sm">
+    <h5>Registrar Calificación</h5>
+    <div class="row g-3">
+        <div class="col-md-3">
+            <label class="form-label">Estudiante</label>
+            <select class="form-select" @bind="estudianteIdSeleccionado">
+                <option value="0">Seleccione...</option>
+                @if (estudiantes != null)
+                {
+                    @foreach (var est in estudiantes)
+                    {
+                        <option value="@est.Id">@est.NombreCompleto</option>
+                    }
+                }
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">Asignatura</label>
+            <select class="form-select" @bind="asignaturaIdSeleccionado">
+                <option value="0">Seleccione...</option>
+                @if (asignaturas != null)
+                {
+                    @foreach (var asig in asignaturas)
+                    {
+                        <option value="@asig.Id">@asig.Codigo - @asig.Nombre</option>
+                    }
+                }
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label">Nota</label>
+            <input type="number" step="0.01" class="form-control" @bind="nota" />
+        </div>
+        <div class="col-md-2">
+            <label class="form-label">Periodo</label>
+            <input class="form-control" @bind="periodo" />
+        </div>
+        <div class="col-md-2 d-flex align-items-end">
+            <button type="button" class="btn btn-primary w-100" @onclick="GuardarCalificacion">Guardar</button>
+        </div>
+    </div>
+</div>
+
+@if (!string.IsNullOrEmpty(mensajeFeedback))
+{
+    <div class="alert alert-info">@mensajeFeedback</div>
+}
+
+@if (calificaciones == null)
+{
+    <p><em>Cargando calificaciones...</em></p>
+}
+else if (!calificaciones.Any())
+{
+    <p>No hay calificaciones registradas.</p>
+}
+else
+{
+    <table class="table table-striped align-middle">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Estudiante</th>
+                <th>Asignatura</th>
+                <th>Nota</th>
+                <th>Periodo</th>
+                <th style="width: 100px;">Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var c in calificaciones)
+            {
+                <tr>
+                    <td>@c.Id</td>
+                    <td>@c.NombreEstudiante</td>
+                    <td>@c.NombreAsignatura</td>
+                    <td><strong>@c.Nota</strong></td>
+                    <td>@c.Periodo</td>
+                    <td>
+                        <button type="button" class="btn btn-danger btn-sm" @onclick="() => Eliminar(c.Id)">Eliminar</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<CalificacionDTO>? calificaciones;
+    private List<EstudianteDto>? estudiantes;
+    private List<AsignaturaDTO>? asignaturas;
+
+    private int estudianteIdSeleccionado = 0;
+    private int asignaturaIdSeleccionado = 0;
+    private decimal nota = 90;
+    private string periodo = "2026-1";
+    private string mensajeFeedback = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CargarDatos();
+    }
+
+    private async Task CargarDatos()
+    {
+        calificaciones = await CalificacionService.ObtenerCalificacionesAsync();
+        estudiantes = await EstudianteService.ObtenerEstudiantesAsync();
+        asignaturas = await AsignaturaService.ObtenerAsignaturasAsync();
+    }
+
+    private async Task GuardarCalificacion()
+    {
+        if (estudianteIdSeleccionado == 0 || asignaturaIdSeleccionado == 0)
+        {
+            mensajeFeedback = "Seleccione el estudiante y la asignatura.";
+            return;
+        }
+
+        var command = new CreateCalificacionCommand(estudianteIdSeleccionado, asignaturaIdSeleccionado, nota, periodo);
+        var exito = await CalificacionService.CrearCalificacionAsync(command);
+
+        if (exito)
+        {
+            mensajeFeedback = "Calificación registrada correctamente.";
+            await CargarDatos();
+        }
+        else
+        {
+            mensajeFeedback = "Error al registrar la calificación.";
+        }
+    }
+
+    private async Task Eliminar(int id)
+    {
+        var exito = await CalificacionService.EliminarCalificacionAsync(id);
+        if (exito)
+        {
+            mensajeFeedback = "Calificación eliminada.";
+            await CargarDatos();
+        }
+        else
+        {
+            mensajeFeedback = "Error al eliminar.";
+        }
+    }
+}

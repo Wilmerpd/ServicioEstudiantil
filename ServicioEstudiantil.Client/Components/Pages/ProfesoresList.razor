@@ -1,121 +1,101 @@
 @page "/profesores"
 @rendermode InteractiveServer
 @inject IProfesorService ProfesorService
+@using ServicioEstudiantil.Client.Contracts
 
-<PageTitle>Profesores</PageTitle>
-
-<div class="page-header">
+<div class="d-flex justify-content-between align-items-center mb-3">
     <div>
-        <h1>Profesores</h1>
-        <p class="page-subtitle">Cuerpo docente registrado en el sistema.</p>
+        <h3>Profesores</h3>
+        <p class="text-muted">Cuerpo docente registrado en el sistema.</p>
     </div>
-    <button class="btn btn-primary" @onclick="AbrirModalCrear">
-        <span>+</span> Nuevo profesor
-    </button>
 </div>
 
-<AlertBanner Mensaje="@mensajeAlerta" Tipo="@tipoAlerta" OnClose="@(() => mensajeAlerta = null)" />
+<div class="card mb-4 p-3 shadow-sm">
+    <h5>@(editandoId == 0 ? "Registrar Nuevo Profesor" : "Editar Profesor")</h5>
+    <div class="row g-3">
+        <div class="col-md-2">
+            <label class="form-label">Identificación</label>
+            <input class="form-control" placeholder="Ej: 001-123" @bind="nuevaIdentificacion" />
+        </div>
+        <div class="col-md-2">
+            <label class="form-label">Nombres</label>
+            <input class="form-control" @bind="nuevoNombre" />
+        </div>
+        <div class="col-md-2">
+            <label class="form-label">Apellidos</label>
+            <input class="form-control" @bind="nuevoApellido" />
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">Correo de Contacto</label>
+            <input class="form-control" type="email" @bind="nuevoCorreo" />
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">Departamento</label>
+            <input class="form-control" placeholder="Ej: Ingeniería de Software" @bind="nuevoDepartamento" />
+        </div>
+        <div class="col-12 text-end mt-3">
+            <button class="btn btn-primary" @onclick="Guardar">
+                @(editandoId == 0 ? "+ Nuevo profesor" : "Guardar Cambios")
+            </button>
+        </div>
+    </div>
+</div>
 
 @if (profesores == null)
 {
-    <div class="loading-box"><em>Cargando profesores...</em></div>
-}
-else if (!profesores.Any())
-{
-    <div class="empty-state">
-        <p>No hay profesores registrados todavía.</p>
-        <button class="btn btn-primary" @onclick="AbrirModalCrear">Registrar el primer profesor</button>
-    </div>
+    <p><em>Cargando profesores...</em></p>
 }
 else
 {
-    <div class="table-card">
-        <table class="table table-app">
-            <thead>
-                <tr>
-                    <th>Nombre completo</th>
-                    <th>Correo de contacto</th>
-                    <th>Departamento</th>
-                    <th class="text-end">Acciones</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var p in profesores)
-                {
+    <div class="card shadow-sm">
+        <div class="card-body p-0">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
                     <tr>
-                        <td>
-                            <div class="avatar-row">
-                                <span class="avatar-circle">@Iniciales(p.NombreCompleto)</span>
-                                @p.NombreCompleto
-                            </div>
-                        </td>
-                        <td>@p.CorreoContacto</td>
-                        <td><span class="badge-tag">@p.Departamento</span></td>
-                        <td class="text-end">
-                            <button class="btn btn-sm btn-outline-primary" @onclick="() => AbrirModalEditar(p)">Editar</button>
-                            <button class="btn btn-sm btn-outline-danger" @onclick="() => AbrirConfirmEliminar(p)">Eliminar</button>
-                        </td>
+                        <th class="ps-4">NOMBRE COMPLETO</th>
+                        <th>IDENTIFICACIÓN</th>
+                        <th>CORREO DE CONTACTO</th>
+                        <th>DEPARTAMENTO</th>
+                        <th class="text-end pe-4">ACCIONES</th>
                     </tr>
-                }
-            </tbody>
-        </table>
+                </thead>
+                <tbody>
+                    @foreach (var p in profesores)
+                    {
+                        <tr>
+                            <td class="ps-4 d-flex align-items-center mt-2 mb-2">
+                                <div class="bg-primary text-white rounded-circle d-flex justify-content-center align-items-center me-3" style="width: 35px; height: 35px; font-weight: bold; font-size: 14px;">
+                                    @ObtenerIniciales(p.NombreCompleto)
+                                </div>
+                                <span>@p.NombreCompleto</span>
+                            </td>
+                            <td>@p.Identificacion</td>
+                            <td>@p.Correo</td>
+                            <td>
+                                <span class="badge bg-light text-primary border border-primary-subtle px-2 py-1">@p.Departamento</span>
+                            </td>
+                            <td class="text-end pe-4">
+                                <button class="btn btn-sm btn-outline-primary me-2" @onclick="() => PrepararEdicion(p)">Editar</button>
+                                <button class="btn btn-sm btn-outline-danger" @onclick="() => Eliminar(p.Id)">Eliminar</button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
     </div>
 }
 
-<ModalDialog IsVisible="mostrarModal" IsVisibleChanged="@(v => mostrarModal = v)"
-             Titulo="@(editando ? "Editar profesor" : "Nuevo profesor")" Icon="👨‍🏫">
-    <ChildContent>
-        <EditForm Model="formModel" OnValidSubmit="Guardar">
-            <DataAnnotationsValidator />
-            <div class="form-row">
-                <div class="form-group">
-                    <label>Nombres</label>
-                    <InputText class="form-control" @bind-Value="formModel.Nombres" placeholder="Nombres" />
-                </div>
-                <div class="form-group">
-                    <label>Apellidos</label>
-                    <InputText class="form-control" @bind-Value="formModel.Apellidos" placeholder="Apellidos" />
-                </div>
-            </div>
-            <div class="form-group">
-                <label>Correo de contacto</label>
-                <InputText class="form-control" @bind-Value="formModel.CorreoContacto" placeholder="correo@institucion.edu" />
-            </div>
-            <div class="form-group">
-                <label>Departamento</label>
-                <InputText class="form-control" @bind-Value="formModel.Departamento" placeholder="Ej. Ciencias de la Computación" />
-            </div>
-            @if (!string.IsNullOrEmpty(errorForm))
-            {
-                <div class="form-error">@errorForm</div>
-            }
-            <div class="modal-actions-inline">
-                <button type="button" class="btn btn-outline-secondary" @onclick="CerrarModal">Cancelar</button>
-                <button type="submit" class="btn btn-primary" disabled="@guardando">
-                    @(guardando ? "Guardando..." : "Guardar")
-                </button>
-            </div>
-        </EditForm>
-    </ChildContent>
-</ModalDialog>
-
-<ConfirmDialog IsVisible="mostrarConfirm" IsVisibleChanged="@(v => mostrarConfirm = v)"
-               Titulo="Eliminar profesor"
-               Mensaje="@($"¿Deseas eliminar a '{profesorAEliminar?.NombreCompleto}'? Esta acción no se puede deshacer.")"
-               OnConfirm="EliminarConfirmado" />
-
 @code {
-    private List<ProfesorDTO>? profesores;
-    private ProfesorInputDTO formModel = new();
-    private bool mostrarModal = false;
-    private bool mostrarConfirm = false;
-    private bool editando = false;
-    private bool guardando = false;
-    private int idEditando = 0;
-    private ProfesorDTO? profesorAEliminar;
-    private string? errorForm;
-    private string? mensajeAlerta;
-    private string tipoAlerta = "success";
+    private List<ServicioEstudiantil.Core.DTOs.ProfesorDTO>? profesores;
+    private int editandoId = 0;
+
+    // Variables para el formulario
+    private string nuevaIdentificacion = string.Empty;
+    private string nuevoNombre = string.Empty;
+    private string nuevoApellido = string.Empty;
+    private string nuevoCorreo = string.Empty;
+    private string nuevoDepartamento = string.Empty;
 
     protected override async Task OnInitializedAsync()
     {
@@ -127,98 +107,69 @@ else
         profesores = await ProfesorService.ObtenerProfesoresAsync();
     }
 
-    private string Iniciales(string nombreCompleto)
-    {
-        var partes = nombreCompleto.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-        if (partes.Length == 0) return "?";
-        if (partes.Length == 1) return partes[0][0].ToString().ToUpper();
-        return $"{partes[0][0]}{partes[^1][0]}".ToUpper();
-    }
-
-    private void AbrirModalCrear()
-    {
-        formModel = new ProfesorInputDTO();
-        editando = false;
-        errorForm = null;
-        mostrarModal = true;
-    }
-
-    private void AbrirModalEditar(ProfesorDTO p)
-    {
-        // El DTO de lectura solo trae el nombre completo, lo separamos para editar por partes.
-        var partes = p.NombreCompleto.Split(' ', 2, StringSplitOptions.RemoveEmptyEntries);
-        formModel = new ProfesorInputDTO
-            {
-                Id = p.Id,
-                Nombres = partes.Length > 0 ? partes[0] : p.NombreCompleto,
-                Apellidos = partes.Length > 1 ? partes[1] : string.Empty,
-                CorreoContacto = p.CorreoContacto,
-                Departamento = p.Departamento
-            };
-        idEditando = p.Id;
-        editando = true;
-        errorForm = null;
-        mostrarModal = true;
-    }
-
-    private void CerrarModal()
-    {
-        mostrarModal = false;
-    }
-
-    private void AbrirConfirmEliminar(ProfesorDTO p)
-    {
-        profesorAEliminar = p;
-        mostrarConfirm = true;
-    }
-
     private async Task Guardar()
     {
-        if (string.IsNullOrWhiteSpace(formModel.Nombres) || string.IsNullOrWhiteSpace(formModel.Apellidos))
-        {
-            errorForm = "Nombres y apellidos son obligatorios.";
-            return;
-        }
+        // Validamos que por lo menos la identificación y nombres no estén vacíos
+        if (string.IsNullOrWhiteSpace(nuevaIdentificacion) || string.IsNullOrWhiteSpace(nuevoNombre)) return;
 
-        guardando = true;
-        errorForm = null;
+        var inputDto = new ServicioEstudiantil.Core.DTOs.ProfesorInputDTO
+            {
+                Id = editandoId,
+                Identificacion = nuevaIdentificacion,
+                Nombres = nuevoNombre,
+                Apellidos = nuevoApellido,
+                Correo = nuevoCorreo,
+                Departamento = nuevoDepartamento
+            };
+
         bool exito;
-
-        if (editando)
+        if (editandoId == 0)
         {
-            exito = await ProfesorService.ActualizarProfesorAsync(formModel);
+            exito = await ProfesorService.CrearProfesorAsync(inputDto);
         }
         else
         {
-            exito = await ProfesorService.CrearProfesorAsync(formModel);
+            exito = await ProfesorService.ActualizarProfesorAsync(inputDto);
         }
 
         if (exito)
         {
-            guardando = false; // <-- Apaga el botón de carga aquí
-            mostrarModal = false;
-            mensajeAlerta = editando ? "Profesor actualizado correctamente." : "Profesor creado correctamente.";
-            tipoAlerta = "success";
+            LimpiarFormulario();
             await CargarDatos();
-        }
-        else
-        {
-            guardando = false; // <-- Y también aquí por si acaso
-            errorForm = "Ocurrió un error al guardar. Verifica los datos y intenta de nuevo.";
         }
     }
 
-    private async Task EliminarConfirmado()
+    private void PrepararEdicion(ServicioEstudiantil.Core.DTOs.ProfesorDTO p)
     {
-        if (profesorAEliminar == null) return;
+        editandoId = p.Id;
+        nuevaIdentificacion = p.Identificacion;
 
-        var exito = await ProfesorService.EliminarProfesorAsync(profesorAEliminar.Id);
-        mensajeAlerta = exito ? "Profesor eliminado." : "No se pudo eliminar el profesor.";
-        tipoAlerta = exito ? "success" : "danger";
+        var partes = p.NombreCompleto.Split(' ', 2, StringSplitOptions.RemoveEmptyEntries);
+        nuevoNombre = partes.Length > 0 ? partes[0] : "";
+        nuevoApellido = partes.Length > 1 ? partes[1] : "";
 
-        if (exito)
-        {
-            await CargarDatos();
-        }
+        nuevoCorreo = p.Correo;
+        nuevoDepartamento = p.Departamento;
+    }
+
+    private async Task Eliminar(int id)
+    {
+        await ProfesorService.EliminarProfesorAsync(id);
+        await CargarDatos();
+    }
+
+    private void LimpiarFormulario()
+    {
+        editandoId = 0;
+        nuevaIdentificacion = ""; nuevoNombre = ""; nuevoApellido = ""; nuevoCorreo = ""; nuevoDepartamento = "";
+    }
+
+    private string ObtenerIniciales(string nombreCompleto)
+    {
+        if (string.IsNullOrWhiteSpace(nombreCompleto)) return "";
+        var partes = nombreCompleto.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        var ini1 = partes.Length > 0 ? partes[0].Substring(0, 1).ToUpper() : "";
+        var ini2 = partes.Length > 1 ? partes[1].Substring(0, 1).ToUpper() : "";
+        return $"{ini1}{ini2}";
     }
 }

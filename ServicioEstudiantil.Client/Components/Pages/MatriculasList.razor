@@ -1,0 +1,153 @@
+﻿@page "/matriculas"
+@rendermode InteractiveServer
+@inject IMatriculaService MatriculaService
+@inject IEstudianteService EstudianteService
+@inject IAsignaturaService AsignaturaService
+@using ServicioEstudiantil.Client.Contracts
+@using ServicioEstudiantil.Core.DTOs
+@using ServicioEstudiantil.Core.Features.Matriculas.Commands.CreateMatricula
+@using ServicioEstudiantil.Core.Features.Estudiantes.Queries.GetEstudiantesList
+
+<h3>Gestión de Matrículas (Inscripciones)</h3>
+
+<div class="card mb-4 p-3 shadow-sm">
+    <h5>Inscribir Estudiante en Asignatura</h5>
+    <div class="row g-3">
+        <div class="col-md-4">
+            <label class="form-label">Estudiante</label>
+            <select class="form-select" @bind="estudianteIdSeleccionado">
+                <option value="0">Seleccione un estudiante...</option>
+                @if (estudiantes != null)
+                {
+                    @foreach (var est in estudiantes)
+                    {
+                        <option value="@est.Id">@est.NombreCompleto</option>
+                    }
+                }
+            </select>
+        </div>
+        <div class="col-md-4">
+            <label class="form-label">Asignatura</label>
+            <select class="form-select" @bind="asignaturaIdSeleccionado">
+                <option value="0">Seleccione una asignatura...</option>
+                @if (asignaturas != null)
+                {
+                    @foreach (var asig in asignaturas)
+                    {
+                        <option value="@asig.Id">@asig.Codigo - @asig.Nombre</option>
+                    }
+                }
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label">Periodo</label>
+            <input class="form-control" placeholder="Ej: 2026-1" @bind="periodo" />
+        </div>
+        <div class="col-md-2 d-flex align-items-end">
+            <button type="button" class="btn btn-primary w-100" @onclick="GuardarMatricula">Inscribir</button>
+        </div>
+    </div>
+</div>
+
+@if (!string.IsNullOrEmpty(mensajeFeedback))
+{
+    <div class="alert alert-info">@mensajeFeedback</div>
+}
+
+@if (matriculas == null)
+{
+    <p><em>Cargando matrículas...</em></p>
+}
+else if (!matriculas.Any())
+{
+    <p>No hay inscripciones registradas.</p>
+}
+else
+{
+    <table class="table table-striped align-middle">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Estudiante</th>
+                <th>Asignatura</th>
+                <th>Periodo</th>
+                <th>Fecha</th>
+                <th style="width: 100px;">Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var m in matriculas)
+            {
+                <tr>
+                    <td>@m.Id</td>
+                    <td>@m.NombreEstudiante</td>
+                    <td>@m.NombreAsignatura</td>
+                    <td>@m.Periodo</td>
+                    <td>@m.FechaInscripcion.ToLocalTime().ToString("g")</td>
+                    <td>
+                        <button type="button" class="btn btn-danger btn-sm" @onclick="() => Eliminar(m.Id)">Eliminar</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<MatriculaDTO>? matriculas;
+    private List<EstudianteDto>? estudiantes;
+    private List<AsignaturaDTO>? asignaturas;
+
+    private int estudianteIdSeleccionado = 0;
+    private int asignaturaIdSeleccionado = 0;
+    private string periodo = "2026-1";
+    private string mensajeFeedback = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CargarDatos();
+    }
+
+    private async Task CargarDatos()
+    {
+        matriculas = await MatriculaService.ObtenerMatriculasAsync();
+        estudiantes = await EstudianteService.ObtenerEstudiantesAsync();
+        asignaturas = await AsignaturaService.ObtenerAsignaturasAsync();
+    }
+
+    private async Task GuardarMatricula()
+    {
+        if (estudianteIdSeleccionado == 0 || asignaturaIdSeleccionado == 0 || string.IsNullOrWhiteSpace(periodo))
+        {
+            mensajeFeedback = "Debe seleccionar un estudiante, una asignatura y especificar el periodo.";
+            return;
+        }
+
+        var command = new CreateMatriculaCommand(estudianteIdSeleccionado, asignaturaIdSeleccionado, periodo);
+        var exito = await MatriculaService.CrearMatriculaAsync(command);
+
+        if (exito)
+        {
+            mensajeFeedback = "Inscripción realizada correctamente.";
+            await CargarDatos();
+        }
+        else
+        {
+            mensajeFeedback = "Error al registrar la inscripción.";
+        }
+    }
+
+    private async Task Eliminar(int id)
+    {
+        var exito = await MatriculaService.EliminarMatriculaAsync(id);
+        if (exito)
+        {
+            mensajeFeedback = "Matrícula eliminada correctamente.";
+            await CargarDatos();
+        }
+        else
+        {
+            mensajeFeedback = "Error al eliminar la matrícula.";
+        }
+    }
+}

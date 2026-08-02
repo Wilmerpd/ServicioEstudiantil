@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using ServicioEstudiantil.Core.Common;
 using ServicioEstudiantil.Infrastructure.Data;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -11,6 +12,8 @@ builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(ServicioEstudiantil.Core.Common.Result<>).Assembly));
+builder.Services.AddScoped<IAppDbContext>(provider => provider.GetRequiredService<AppDbContext>());
 
 var app = builder.Build();
 

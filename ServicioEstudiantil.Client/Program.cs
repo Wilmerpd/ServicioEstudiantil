@@ -15,12 +15,17 @@ builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri("https:/
 builder.Services.AddScoped<HttpClientService>();
 builder.Services.AddScoped<LocalStorageService>();
 
+
 // 4. Registro de los contratos y servicios de la capa de aplicación
 builder.Services.AddScoped<IAsignaturaService, AsignaturaService>();
 builder.Services.AddScoped<IProfesorService, ProfesorService>();
+builder.Services.AddScoped<EstudianteService>();
 builder.Services.AddScoped<IEstudianteService, EstudianteService>();
 builder.Services.AddScoped<IHorarioService, HorarioService>();
 builder.Services.AddScoped<ITitulacionService, TitulacionService>();
+builder.Services.AddScoped<IAsignaturaService, AsignaturaService>();
+builder.Services.AddScoped<IMatriculaService, MatriculaService>();
+builder.Services.AddScoped<ICalificacionService, CalificacionService>();
 
 var app = builder.Build();
 

@@ -2,259 +2,179 @@
 @rendermode InteractiveServer
 @inject IHorarioService HorarioService
 @inject IAsignaturaService AsignaturaService
+@using ServicioEstudiantil.Client.Contracts
+@using ServicioEstudiantil.Core.DTOs
 
-<PageTitle>Horarios</PageTitle>
-
-<div class="page-header">
+<div class="d-flex justify-content-between align-items-center mb-3">
     <div>
-        <h1>Horarios</h1>
-        <p class="page-subtitle">Bloques de clase por asignatura, día y aula.</p>
+        <h3>Horarios</h3>
+        <p class="text-muted">Bloques de clase por asignatura, día y aula.</p>
     </div>
-    <button class="btn btn-primary" @onclick="AbrirModalCrear" disabled="@(!PuedeCrear)">
-        <span>+</span> Nuevo horario
-    </button>
 </div>
 
-<AlertBanner Mensaje="@mensajeAlerta" Tipo="@tipoAlerta" OnClose="@(() => mensajeAlerta = null)" />
-
-@if (!PuedeCrear && asignaturas != null)
-{
-    <div class="empty-state">
-        <p>Necesitas al menos una <strong>asignatura</strong> registrada antes de poder crear horarios.</p>
-        <a class="btn btn-outline-primary" href="/asignaturas">Ir a Asignaturas</a>
-    </div>
-}
-
-@if (horarios == null)
-{
-    <div class="loading-box"><em>Cargando horarios...</em></div>
-}
-else if (!horarios.Any())
-{
-    <div class="empty-state">
-        <p>No hay horarios registrados todavía.</p>
-    </div>
-}
-else
-{
-    <div class="table-card">
-        <table class="table table-app">
-            <thead>
-                <tr>
-                    <th>Día</th>
-                    <th>Hora</th>
-                    <th>Aula</th>
-                    <th>Asignatura</th>
-                    <th class="text-end">Acciones</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var h in horarios)
+<div class="card mb-4 p-3 shadow-sm">
+    <h5>@(editandoId == 0 ? "Nuevo Horario" : "Editar Horario")</h5>
+    <div class="row g-3">
+        <div class="col-md-2">
+            <label class="form-label">Día</label>
+            <select class="form-select" @bind="nuevoDiaSemana">
+                <option value="Lunes">Lunes</option>
+                <option value="Martes">Martes</option>
+                <option value="Miércoles">Miércoles</option>
+                <option value="Jueves">Jueves</option>
+                <option value="Viernes">Viernes</option>
+                <option value="Sábado">Sábado</option>
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label">Hora Inicio</label>
+            <input type="time" class="form-control" @bind="nuevaHoraInicio" />
+        </div>
+        <div class="col-md-2">
+            <label class="form-label">Hora Fin</label>
+            <input type="time" class="form-control" @bind="nuevaHoraFin" />
+        </div>
+        <div class="col-md-2">
+            <label class="form-label">Aula</label>
+            <input class="form-control" placeholder="Ej: A-104" @bind="nuevaAula" />
+        </div>
+        <div class="col-md-4">
+            <label class="form-label">Asignatura</label>
+            <select class="form-select" @bind="asignaturaIdSeleccionada">
+                <option value="0">Seleccione...</option>
+                @if (asignaturas != null)
                 {
-                    <tr>
-                        <td><span class="badge-dia">@h.DiaSemana</span></td>
-                        <td>@FormatoHora(h.HoraInicio) - @FormatoHora(h.HoraFin)</td>
-                        <td>@h.Aula</td>
-                        <td>@h.NombreAsignatura</td>
-                        <td class="text-end">
-                            <button class="btn btn-sm btn-outline-primary" @onclick="() => AbrirModalEditar(h)">Editar</button>
-                            <button class="btn btn-sm btn-outline-danger" @onclick="() => AbrirConfirmEliminar(h)">Eliminar</button>
-                        </td>
-                    </tr>
+                    @foreach (var asig in asignaturas)
+                    {
+                        <option value="@asig.Id">@asig.Nombre</option>
+                    }
                 }
-            </tbody>
-        </table>
+            </select>
+        </div>
+        <div class="col-12 text-end mt-3">
+            <button class="btn btn-primary" @onclick="Guardar">
+                @(editandoId == 0 ? "+ Agregar Horario" : "Guardar Cambios")
+            </button>
+        </div>
+    </div>
+</div>
+
+@if (horarios != null)
+{
+    <div class="card shadow-sm">
+        <div class="card-body p-0">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th class="ps-4">DÍA</th>
+                        <th>HORARIO</th>
+                        <th>AULA</th>
+                        <th>ASIGNATURA</th>
+                        <th class="text-end pe-4">ACCIONES</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var h in horarios)
+                    {
+                        <tr>
+                            <td class="ps-4">
+                                <span class="badge bg-warning bg-opacity-25 text-dark px-2 py-1">@h.DiaSemana</span>
+                            </td>
+                            <td>@h.HoraInicio.ToString(@"hh\:mm") - @h.HoraFin.ToString(@"hh\:mm")</td>
+                            <td>@h.Aula</td>
+                            <td>@h.NombreAsignatura</td>
+                            <td class="text-end pe-4">
+                                <button class="btn btn-sm btn-outline-primary me-2" @onclick="() => PrepararEdicion(h)">Editar</button>
+                                <button class="btn btn-sm btn-outline-danger" @onclick="() => Eliminar(h.Id)">Eliminar</button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
     </div>
 }
-
-<ModalDialog IsVisible="mostrarModal" IsVisibleChanged="@(v => mostrarModal = v)"
-             Titulo="@(editando ? "Editar horario" : "Nuevo horario")" Icon="🕒">
-    <ChildContent>
-        <EditForm Model="formModel" OnValidSubmit="Guardar">
-            <DataAnnotationsValidator />
-            <div class="form-row">
-                <div class="form-group">
-                    <label>Día de la semana</label>
-                    <InputSelect class="form-control" @bind-Value="formModel.DiaSemana">
-                        <option value="">Selecciona un día</option>
-                        @foreach (var dia in dias)
-                        {
-                            <option value="@dia">@dia</option>
-                        }
-                    </InputSelect>
-                </div>
-                <div class="form-group">
-                    <label>Aula</label>
-                    <InputText class="form-control" @bind-Value="formModel.Aula" placeholder="Ej. A-201" />
-                </div>
-            </div>
-            <div class="form-group">
-                <label>Hora de inicio</label>
-                <input type="time" class="form-control" @bind="tiempoInicio" />
-            </div>
-            <div class="form-group">
-                <label>Hora de fin</label>
-                <input type="time" class="form-control" @bind="tiempoFin" />
-            </div>
-            <div class="form-group">
-                <label>Asignatura</label>
-                <InputSelect class="form-control" @bind-Value="formModel.AsignaturaId">
-                    <option value="0">Selecciona una asignatura</option>
-                    @if (asignaturas != null)
-                    {
-                        @foreach (var a in asignaturas)
-                        {
-                            <option value="@a.Id">@a.Nombre</option>
-                        }
-                    }
-                </InputSelect>
-            </div>
-            @if (!string.IsNullOrEmpty(errorForm))
-            {
-                <div class="form-error">@errorForm</div>
-            }
-            <div class="modal-actions-inline">
-                <button type="button" class="btn btn-outline-secondary" @onclick="CerrarModal">Cancelar</button>
-                <button type="submit" class="btn btn-primary" disabled="@guardando">
-                    @(guardando ? "Guardando..." : "Guardar")
-                </button>
-            </div>
-        </EditForm>
-    </ChildContent>
-</ModalDialog>
-
-<ConfirmDialog IsVisible="mostrarConfirm" IsVisibleChanged="@(v => mostrarConfirm = v)"
-               Titulo="Eliminar horario"
-               Mensaje="@($"¿Deseas eliminar el horario de '{horarioAEliminar?.NombreAsignatura}' el {horarioAEliminar?.DiaSemana}? Esta acción no se puede deshacer.")"
-               OnConfirm="EliminarConfirmado" />
 
 @code {
-    private static readonly string[] dias = { "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado" };
-
     private List<HorarioDTO>? horarios;
     private List<AsignaturaDTO>? asignaturas;
-    private HorarioInputDTO formModel = new();
-    private TimeOnly? tiempoInicio;
-    private TimeOnly? tiempoFin;
-    private bool mostrarModal = false;
-    private bool mostrarConfirm = false;
-    private bool editando = false;
-    private bool guardando = false;
-    private int idEditando = 0;
-    private HorarioDTO? horarioAEliminar;
-    private string? errorForm;
-    private string? mensajeAlerta;
-    private string tipoAlerta = "success";
+    private int editandoId = 0;
 
-    private bool PuedeCrear => asignaturas?.Any() ?? false;
+    private string nuevoDiaSemana = "Lunes";
+    private DateTime nuevaHoraInicio = DateTime.Today.AddHours(18); // 6:00 PM por defecto
+    private DateTime nuevaHoraFin = DateTime.Today.AddHours(20);    // 8:00 PM por defecto
+    private string nuevaAula = string.Empty;
+    private int asignaturaIdSeleccionada = 0;
 
     protected override async Task OnInitializedAsync()
     {
         await CargarDatos();
+        asignaturas = await AsignaturaService.ObtenerAsignaturasAsync();
     }
 
     private async Task CargarDatos()
     {
         horarios = await HorarioService.ObtenerHorariosAsync();
-        asignaturas = await AsignaturaService.ObtenerAsignaturasAsync();
-    }
-
-    private string FormatoHora(TimeSpan t) => DateTime.Today.Add(t).ToString("hh:mm tt");
-
-    private void AbrirModalCrear()
-    {
-        formModel = new HorarioInputDTO();
-        tiempoInicio = null;
-        tiempoFin = null;
-        editando = false;
-        errorForm = null;
-        mostrarModal = true;
-    }
-
-    private void AbrirModalEditar(HorarioDTO p)
-    {
-        formModel = new HorarioInputDTO
-            {
-                Id = p.Id,
-                DiaSemana = p.DiaSemana,
-                HoraInicio = p.HoraInicio,
-                HoraFin = p.HoraFin,
-                Aula = p.Aula
-            };
-        editando = true;
-        errorForm = null;
-        mostrarModal = true;
-    }
-
-    private void CerrarModal()
-    {
-        mostrarModal = false;
-    }
-
-    private void AbrirConfirmEliminar(HorarioDTO h)
-    {
-        horarioAEliminar = h;
-        mostrarConfirm = true;
     }
 
     private async Task Guardar()
     {
-       
-        if (tiempoInicio.HasValue)
-        {
-            formModel.HoraInicio = tiempoInicio.Value.ToTimeSpan();
-        }
+        if (asignaturaIdSeleccionada == 0) return;
 
-        if (tiempoFin.HasValue)
-        {
-            formModel.HoraFin = tiempoFin.Value.ToTimeSpan();
-        }
+        var inputDto = new HorarioInputDTO
+            {
+                Id = editandoId,
+                DiaSemana = nuevoDiaSemana,
+                HoraInicio = nuevaHoraInicio.TimeOfDay, // <-- Aquí sacamos el TimeSpan
+                HoraFin = nuevaHoraFin.TimeOfDay,       // <-- Aquí sacamos el TimeSpan
+                Aula = nuevaAula,
+                AsignaturaId = asignaturaIdSeleccionada
+            };
 
-        if (tiempoFin <= tiempoInicio)
-        {
-            errorForm = "La hora de fin debe ser mayor a la hora de inicio.";
-            return;
-        }
-
-        guardando = true;
-        errorForm = null;
         bool exito;
-
-        if (editando)
+        if (editandoId == 0)
         {
-            exito = await HorarioService.ActualizarHorarioAsync(formModel);
+            exito = await HorarioService.CrearHorarioAsync(inputDto);
         }
         else
         {
-            exito = await HorarioService.CrearHorarioAsync(formModel);
+            exito = await HorarioService.ActualizarHorarioAsync(inputDto);
         }
-
-        guardando = false;
 
         if (exito)
         {
-            mostrarModal = false;
-            mensajeAlerta = editando ? "Horario actualizado correctamente." : "Horario creado correctamente.";
-            tipoAlerta = "success";
+            LimpiarFormulario();
             await CargarDatos();
-        }
-        else
-        {
-            errorForm = "Ocurrió un error al guardar. Verifica los datos e intenta de nuevo.";
         }
     }
 
-    private async Task EliminarConfirmado()
+    private void PrepararEdicion(HorarioDTO h)
     {
-        if (horarioAEliminar == null) return;
+        editandoId = h.Id;
+        nuevoDiaSemana = h.DiaSemana;
+        nuevaHoraInicio = DateTime.Today.Add(h.HoraInicio);
+        nuevaHoraFin = DateTime.Today.Add(h.HoraFin);
+        nuevaAula = h.Aula;
 
-        var exito = await HorarioService.EliminarHorarioAsync(horarioAEliminar.Id);
-        mensajeAlerta = exito ? "Horario eliminado." : "No se pudo eliminar el horario.";
-        tipoAlerta = exito ? "success" : "danger";
 
-        if (exito)
-        {
-            await CargarDatos();
-        }
+        // Como el HorarioDTO solo trae el Nombre de la asignatura, buscamos su ID en la lista local para seleccionarla
+        var asignaturaVinculada = asignaturas?.FirstOrDefault(a => a.Nombre == h.NombreAsignatura);
+        asignaturaIdSeleccionada = asignaturaVinculada != null ? asignaturaVinculada.Id : 0;
+    }
+
+    private async Task Eliminar(int id)
+    {
+        await HorarioService.EliminarHorarioAsync(id);
+        await CargarDatos();
+    }
+
+    private void LimpiarFormulario()
+    {
+        editandoId = 0;
+        nuevoDiaSemana = "Lunes";
+        nuevaHoraInicio = DateTime.Today.AddHours(18);
+        nuevaHoraFin = DateTime.Today.AddHours(20);
+        nuevaAula = "";
+        asignaturaIdSeleccionada = 0;
     }
 }

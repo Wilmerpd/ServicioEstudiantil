@@ -1,45 +1,59 @@
-﻿using ServicioEstudiantil.Client.Contracts;
-using ServicioEstudiantil.Client.Extensions;
-using ServicioEstudiantil.Core.DTOs;
+﻿using System.Net.Http.Json;
+using ServicioEstudiantil.Client.Contracts;
+using ServicioEstudiantil.Core.Features.Estudiantes.Queries.GetEstudiantesList;
 
-namespace ServicioEstudiantil.Client.Services
+namespace ServicioEstudiantil.Client.Services;
+
+public class EstudianteService : IEstudianteService
 {
-    public class EstudianteService : IEstudianteService
+    private readonly HttpClient _http;
+
+    public EstudianteService(HttpClient http)
     {
-        private readonly HttpClientService _httpService;
+        _http = http;
+    }
 
-        public EstudianteService(HttpClientService httpService)
+    public async Task<List<EstudianteDto>?> ObtenerEstudiantesAsync()
+    {
+        try
         {
-            _httpService = httpService;
+            return await _http.GetFromJsonAsync<List<EstudianteDto>>("api/Estudiantes");
         }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error: {ex.Message}");
+            return null;
+        }
+    }
 
-        public async Task<List<EstudianteDTO>?> ObtenerEstudiantesAsync()
+    public async Task<EstudianteDto?> ObtenerEstudiantePorIdAsync(int id)
+    {
+        try
         {
-            return await _httpService.GetAsync<List<EstudianteDTO>>("estudiantes");
+            return await _http.GetFromJsonAsync<EstudianteDto>($"api/Estudiantes/{id}");
         }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error: {ex.Message}");
+            return null;
+        }
+    }
 
-        public async Task<EstudianteDTO?> ObtenerEstudiantePorIdAsync(int id)
-        {
-            return await _httpService.GetAsync<EstudianteDTO>($"estudiantes/{id}");
-        }
-        // (Debajo de tus métodos Obtener...)
+    public async Task<bool> CrearEstudianteAsync(object command)
+    {
+        var response = await _http.PostAsJsonAsync("api/Estudiantes", command);
+        return response.IsSuccessStatusCode;
+    }
 
-        public async Task<bool> CrearEstudianteAsync(EstudianteDTO estudiante)
-        {
-            var response = await _httpService.PostAsync<EstudianteDTO>("estudiantes", estudiante);
-            return response != null;
-        }
+    public async Task<bool> ActualizarEstudianteAsync(int id, object command)
+    {
+        var response = await _http.PutAsJsonAsync($"api/Estudiantes/{id}", command);
+        return response.IsSuccessStatusCode;
+    }
 
-        public async Task<bool> ActualizarEstudianteAsync(EstudianteDTO estudiante)
-        {
-            var response = await _httpService.PutAsync<EstudianteDTO>($"estudiantes/{estudiante.Id}", estudiante);
-            return true;
-        }
-
-        public async Task<bool> EliminarEstudianteAsync(int id)
-        {
-            var response = await _httpService.DeleteAsync<bool>($"estudiantes/{id}");
-            return true;
-        }
+    public async Task<bool> EliminarEstudianteAsync(int id)
+    {
+        var response = await _http.DeleteAsync($"api/Estudiantes/{id}");
+        return response.IsSuccessStatusCode;
     }
 }

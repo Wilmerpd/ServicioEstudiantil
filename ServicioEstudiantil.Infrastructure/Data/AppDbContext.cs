@@ -1,21 +1,22 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using ServicioEstudiantil.Core.Common;
 using ServicioEstudiantil.Core.Entities;
 
-namespace ServicioEstudiantil.Infrastructure.Data
+namespace ServicioEstudiantil.Infrastructure.Data; // O Infrastructure.Persistence según tu namespace
+
+public class AppDbContext : DbContext, IAppDbContext
 {
-    public class AppDbContext : DbContext
+    public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
+
+    public DbSet<Estudiante> Estudiantes => Set<Estudiante>();
+    public DbSet<Profesor> Profesores => Set<Profesor>();
+    public DbSet<Asignatura> Asignaturas => Set<Asignatura>();
+    public DbSet<Horario> Horarios => Set<Horario>();
+    public DbSet<Titulacion> Titulaciones => Set<Titulacion>();
+    public DbSet<Matricula> Matriculas => Set<Matricula>();
+    public DbSet<Calificacion> Calificaciones => Set<Calificacion>();
+    public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
-        public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
-        {
-        }
-
-        // Entidades base
-        public DbSet<Asignatura> Asignaturas { get; set; }
-        public DbSet<Profesor> Profesores { get; set; }
-        public DbSet<Titulacion> Titulaciones { get; set; }
-
-        // LAS DOS ENTIDADES NUEVAS QUE AGREGAMOS HOY
-        public DbSet<Estudiante> Estudiantes { get; set; }
-        public DbSet<Horario> Horarios { get; set; }
+        return await base.SaveChangesAsync(cancellationToken);
     }
 }

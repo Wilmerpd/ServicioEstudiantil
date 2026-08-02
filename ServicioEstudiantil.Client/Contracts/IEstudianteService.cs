@@ -1,15 +1,12 @@
-﻿using ServicioEstudiantil.Core.DTOs;
+﻿using ServicioEstudiantil.Core.Features.Estudiantes.Queries.GetEstudiantesList;
 
-namespace ServicioEstudiantil.Client.Contracts
+namespace ServicioEstudiantil.Client.Contracts;
+
+public interface IEstudianteService
 {
-    public interface IEstudianteService
-    {
-        Task<List<EstudianteDTO>?> ObtenerEstudiantesAsync();
-        Task<EstudianteDTO?> ObtenerEstudiantePorIdAsync(int id);
-
-        // LOS 3 MÉTODOS QUE SAUL ESTÁ ESPERANDO:
-        Task<bool> CrearEstudianteAsync(EstudianteDTO estudiante);
-        Task<bool> ActualizarEstudianteAsync(EstudianteDTO estudiante);
-        Task<bool> EliminarEstudianteAsync(int id);
-    }
+    Task<List<EstudianteDto>?> ObtenerEstudiantesAsync();
+    Task<EstudianteDto?> ObtenerEstudiantePorIdAsync(int id);
+    Task<bool> CrearEstudianteAsync(object command);
+    Task<bool> ActualizarEstudianteAsync(int id, object command);
+    Task<bool> EliminarEstudianteAsync(int id);
 }

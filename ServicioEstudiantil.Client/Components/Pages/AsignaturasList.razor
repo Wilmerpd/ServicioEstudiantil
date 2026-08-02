@@ -1,243 +1,176 @@
 @page "/asignaturas"
 @rendermode InteractiveServer
 @inject IAsignaturaService AsignaturaService
-@inject ITitulacionService TitulacionService
-@inject IProfesorService ProfesorService
+@using ServicioEstudiantil.Client.Contracts
+@using ServicioEstudiantil.Core.DTOs
+@using ServicioEstudiantil.Core.Features.Asignaturas.Commands.CreateAsignatura
+@using ServicioEstudiantil.Core.Features.Asignaturas.Commands.UpdateAsignatura
 
-<PageTitle>Asignaturas</PageTitle>
 
-<div class="page-header">
-    <div>
-        <h1>Asignaturas</h1>
-        <p class="page-subtitle">Materias asociadas a cada titulación y profesor.</p>
-    </div>
-    <button class="btn btn-primary" @onclick="AbrirModalCrear" disabled="@(!PuedeCrear)">
-        <span>+</span> Nueva asignatura
-    </button>
-</div>
+<h3>Gestión de Asignaturas</h3>
 
-<AlertBanner Mensaje="@mensajeAlerta" Tipo="@tipoAlerta" OnClose="@(() => mensajeAlerta = null)" />
-
-@if (!PuedeCrear && titulaciones != null && profesores != null)
-{
-    <div class="empty-state">
-        <p>Necesitas al menos una <strong>titulación</strong> y un <strong>profesor</strong> registrados antes de poder crear asignaturas.</p>
-        <div class="modal-actions-inline">
-            <a class="btn btn-outline-primary" href="/titulaciones">Ir a Titulaciones</a>
-            <a class="btn btn-outline-primary" href="/profesores">Ir a Profesores</a>
+<div class="card mb-4 p-3 shadow-sm">
+    <h5>@(editandoId == 0 ? "Registrar Nueva Asignatura" : $"Editando Asignatura ID: {editandoId}")</h5>
+    <div class="row g-3">
+        <div class="col-md-3">
+            <label class="form-label">Código</label>
+            <input class="form-control" placeholder="Ej: ISW-101" @bind="nuevoCodigo" />
+        </div>
+        <div class="col-md-4">
+            <label class="form-label">Nombre</label>
+            <input class="form-control" placeholder="Nombre de la asignatura" @bind="nuevoNombre" />
+        </div>
+        <div class="col-md-2">
+            <label class="form-label">Créditos</label>
+            <input type="number" class="form-control" @bind="nuevoCreditos" />
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">Departamento</label>
+            <input class="form-control" placeholder="Departamento" @bind="nuevoDepartamento" />
         </div>
     </div>
+    <div class="mt-3">
+        <button type="button" class="btn btn-primary" @onclick="GuardarAsignatura">
+            @(editandoId == 0 ? "Guardar Asignatura" : "Actualizar Cambios")
+        </button>
+        @if (editandoId != 0)
+        {
+            <button type="button" class="btn btn-secondary ms-2" @onclick="CancelarEdicion">Cancelar</button>
+        }
+    </div>
+</div>
+
+@if (!string.IsNullOrEmpty(mensajeFeedback))
+{
+    <div class="alert alert-info">@mensajeFeedback</div>
 }
 
 @if (asignaturas == null)
 {
-    <div class="loading-box"><em>Cargando asignaturas...</em></div>
+    <p><em>Cargando asignaturas desde la base de datos...</em></p>
 }
 else if (!asignaturas.Any())
 {
-    <div class="empty-state">
-        <p>No hay asignaturas registradas todavía.</p>
-    </div>
+    <p>No hay asignaturas registradas en el sistema.</p>
 }
 else
 {
-    <div class="table-card">
-        <table class="table table-app">
-            <thead>
-                <tr>
-                    <th>Asignatura</th>
-                    <th>Créditos</th>
-                    <th>Titulación</th>
-                    <th>Profesor</th>
-                    <th class="text-end">Acciones</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var a in asignaturas)
-                {
-                    <tr>
-                        <td>@a.Nombre</td>
-                        <td><span class="badge-codigo">@a.Creditos cr.</span></td>
-                        <td>@a.NombreTitulacion</td>
-                        <td>@a.NombreProfesor</td>
-                        <td class="text-end">
-                            <button class="btn btn-sm btn-outline-primary" @onclick="() => AbrirModalEditar(a)">Editar</button>
-                            <button class="btn btn-sm btn-outline-danger" @onclick="() => AbrirConfirmEliminar(a)">Eliminar</button>
-                        </td>
-                    </tr>
-                }
-            </tbody>
-        </table>
-    </div>
-}
-
-<ModalDialog IsVisible="mostrarModal" IsVisibleChanged="@(v => mostrarModal = v)"
-             Titulo="@(editando ? "Editar asignatura" : "Nueva asignatura")" Icon="📚">
-    <ChildContent>
-        <EditForm Model="formModel" OnValidSubmit="Guardar">
-            <DataAnnotationsValidator />
-            <div class="form-group">
-                <label>Nombre de la asignatura</label>
-                <InputText class="form-control" @bind-Value="formModel.Nombre" placeholder="Ej. Bases de Datos" />
-            </div>
-            <div class="form-row">
-                <div class="form-group">
-                    <label>Créditos</label>
-                    <InputNumber class="form-control" @bind-Value="formModel.Creditos" min="1" max="10" />
-                </div>
-                <div class="form-group">
-                    <label>Titulación</label>
-                    <InputSelect class="form-control" @bind-Value="formModel.TitulacionId">
-                        <option value="0">Selecciona una titulación</option>
-                        @if (titulaciones != null)
-                        {
-                            @foreach (var t in titulaciones)
-                            {
-                                <option value="@t.Id">@t.Nombre</option>
-                            }
-                        }
-                    </InputSelect>
-                </div>
-            </div>
-            <div class="form-group">
-                <label>Profesor</label>
-                <InputSelect class="form-control" @bind-Value="formModel.ProfesorId">
-                    <option value="0">Selecciona un profesor</option>
-                    @if (profesores != null)
-                    {
-                        @foreach (var p in profesores)
-                        {
-                            <option value="@p.Id">@p.NombreCompleto</option>
-                        }
-                    }
-                </InputSelect>
-            </div>
-            @if (!string.IsNullOrEmpty(errorForm))
+    <table class="table table-striped align-middle">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Código</th>
+                <th>Nombre</th>
+                <th>Créditos</th>
+                <th>Departamento</th>
+                <th style="width: 180px;">Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var asig in asignaturas)
             {
-                <div class="form-error">@errorForm</div>
+                <tr>
+                    <td>@asig.Id</td>
+                    <td>@asig.Codigo</td>
+                    <td>@asig.Nombre</td>
+                    <td>@asig.Creditos</td>
+                    <td>@asig.Departamento</td>
+                    <td>
+                        <button type="button" class="btn btn-warning btn-sm me-1" @onclick="() => PrepararEdicion(asig)">Editar</button>
+                        <button type="button" class="btn btn-danger btn-sm" @onclick="() => Eliminar(asig.Id)">Eliminar</button>
+                    </td>
+                </tr>
             }
-            <div class="modal-actions-inline">
-                <button type="button" class="btn btn-outline-secondary" @onclick="CerrarModal">Cancelar</button>
-                <button type="submit" class="btn btn-primary" disabled="@guardando">
-                    @(guardando ? "Guardando..." : "Guardar")
-                </button>
-            </div>
-        </EditForm>
-    </ChildContent>
-</ModalDialog>
-
-<ConfirmDialog IsVisible="mostrarConfirm" IsVisibleChanged="@(v => mostrarConfirm = v)"
-               Titulo="Eliminar asignatura"
-               Mensaje="@($"¿Deseas eliminar la asignatura '{asignaturaAEliminar?.Nombre}'? Esta acción no se puede deshacer.")"
-               OnConfirm="EliminarConfirmado" />
+        </tbody>
+    </table>
+}
 
 @code {
     private List<AsignaturaDTO>? asignaturas;
-    private List<TitulacionDTO>? titulaciones;
-    private List<ProfesorDTO>? profesores;
-    private AsignaturaInputDTO formModel = new();
-    private bool mostrarModal = false;
-    private bool mostrarConfirm = false;
-    private bool editando = false;
-    private bool guardando = false;
-    private int idEditando = 0;
-    private AsignaturaDTO? asignaturaAEliminar;
-    private string? errorForm;
-    private string? mensajeAlerta;
-    private string tipoAlerta = "success";
 
-    private bool PuedeCrear => (titulaciones?.Any() ?? false) && (profesores?.Any() ?? false);
+    private int editandoId = 0;
+    private string nuevoCodigo = string.Empty;
+    private string nuevoNombre = string.Empty;
+    private int nuevoCreditos = 4;
+    private string nuevoDepartamento = string.Empty;
+    private string mensajeFeedback = string.Empty;
 
     protected override async Task OnInitializedAsync()
     {
-        await CargarDatos();
+        await CargarAsignaturas();
     }
 
-    private async Task CargarDatos()
+    private async Task CargarAsignaturas()
     {
         asignaturas = await AsignaturaService.ObtenerAsignaturasAsync();
-        titulaciones = await TitulacionService.ObtenerTitulacionesAsync();
-        profesores = await ProfesorService.ObtenerProfesoresAsync();
     }
 
-    private void AbrirModalCrear()
+    private async Task GuardarAsignatura()
     {
-        formModel = new AsignaturaInputDTO { Creditos = 3 };
-        editando = false;
-        errorForm = null;
-        mostrarModal = true;
-    }
-
-    private void AbrirModalEditar(AsignaturaDTO p)
-    {
-        formModel = new AsignaturaInputDTO
-            {
-                Id = p.Id,
-                Nombre = p.Nombre,
-                Creditos = p.Creditos
-            };
-        editando = true;
-        errorForm = null;
-        mostrarModal = true;
-    }
-    private void CerrarModal()
-    {
-        mostrarModal = false;
-    }
-
-    private void AbrirConfirmEliminar(AsignaturaDTO a)
-    {
-        asignaturaAEliminar = a;
-        mostrarConfirm = true;
-    }
-
-    private async Task Guardar()
-    {
-        if (string.IsNullOrWhiteSpace(formModel.Nombre) || formModel.TitulacionId == 0 || formModel.ProfesorId == 0)
+        if (string.IsNullOrWhiteSpace(nuevoCodigo) || string.IsNullOrWhiteSpace(nuevoNombre))
         {
-            errorForm = "Nombre, titulación y profesor son obligatorios.";
+            mensajeFeedback = "El código y el nombre son obligatorios.";
             return;
         }
 
-        guardando = true;
-        errorForm = null;
-        bool exito;
+        bool exito = false;
 
-        if (editando)
+        if (editandoId == 0)
         {
-            exito = await AsignaturaService.ActualizarAsignaturaAsync(formModel);
+            var command = new CreateAsignaturaCommand(nuevoCodigo, nuevoNombre, nuevoCreditos, nuevoDepartamento);
+            exito = await AsignaturaService.CrearAsignaturaAsync(command);
+            mensajeFeedback = exito ? "Asignatura registrada correctamente." : "Error al registrar la asignatura.";
         }
         else
         {
-            exito = await AsignaturaService.CrearAsignaturaAsync(formModel);
+            var command = new UpdateAsignaturaCommand(editandoId, nuevoCodigo, nuevoNombre, nuevoCreditos, nuevoDepartamento);
+            exito = await AsignaturaService.ActualizarAsignaturaAsync(editandoId, command);
+            mensajeFeedback = exito ? "Asignatura actualizada correctamente." : "Error al actualizar la asignatura.";
         }
-
-        guardando = false;
 
         if (exito)
         {
-            mostrarModal = false;
-            mensajeAlerta = editando ? "Asignatura actualizada correctamente." : "Asignatura creada correctamente.";
-            tipoAlerta = "success";
-            await CargarDatos();
-        }
-        else
-        {
-            errorForm = "Ocurrió un error al guardar. Verifica los datos e intenta de nuevo.";
+            LimpiarFormulario();
+            await CargarAsignaturas();
         }
     }
 
-    private async Task EliminarConfirmado()
+    private void PrepararEdicion(AsignaturaDTO asig)
     {
-        if (asignaturaAEliminar == null) return;
+        editandoId = asig.Id;
+        nuevoCodigo = asig.Codigo;
+        nuevoNombre = asig.Nombre;
+        nuevoCreditos = asig.Creditos;
+        nuevoDepartamento = asig.Departamento;
+        mensajeFeedback = $"Editando la asignatura con ID: {asig.Id}";
+    }
 
-        var exito = await AsignaturaService.EliminarAsignaturaAsync(asignaturaAEliminar.Id);
-        mensajeAlerta = exito ? "Asignatura eliminada." : "No se pudo eliminar la asignatura.";
-        tipoAlerta = exito ? "success" : "danger";
+    private void CancelarEdicion()
+    {
+        LimpiarFormulario();
+        mensajeFeedback = "Edición cancelada.";
+    }
 
+    private void LimpiarFormulario()
+    {
+        editandoId = 0;
+        nuevoCodigo = string.Empty;
+        nuevoNombre = string.Empty;
+        nuevoCreditos = 4;
+        nuevoDepartamento = string.Empty;
+    }
+
+    private async Task Eliminar(int id)
+    {
+        var exito = await AsignaturaService.EliminarAsignaturaAsync(id);
         if (exito)
         {
-            await CargarDatos();
+            mensajeFeedback = "Asignatura eliminada correctamente.";
+            await CargarAsignaturas();
+        }
+        else
+        {
+            mensajeFeedback = "Error al intentar eliminar la asignatura.";
         }
     }
 }
