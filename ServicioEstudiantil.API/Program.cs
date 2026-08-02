@@ -1,15 +1,45 @@
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using ServicioEstudiantil.Core.Common;
 using ServicioEstudiantil.Infrastructure.Data;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Configuración de la Base de Datos
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer("Server=(localdb)\\mssqllocaldb;Database=ServicioEstudiantilDB;Trusted_Connection=True;"));
 
-// Add services to the container.
+// ===== NUEVO: CONFIGURACIÓN DE SEGURIDAD JWT =====
+var jwtSettings = builder.Configuration.GetSection("Jwt");
+var key = Encoding.ASCII.GetBytes(jwtSettings["Key"]!);
 
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
+{
+    options.RequireHttpsMetadata = false;
+    options.SaveToken = true;
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuerSigningKey = true,
+        IssuerSigningKey = new SymmetricSecurityKey(key),
+        ValidateIssuer = true,
+        ValidIssuer = jwtSettings["Issuer"],
+        ValidateAudience = true,
+        ValidAudience = jwtSettings["Audience"],
+        ValidateLifetime = true,
+        ClockSkew = TimeSpan.Zero // Para que expire a la hora exacta
+    };
+});
+// ==================================================
+
+// Add services to the container.
 builder.Services.AddControllers();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(ServicioEstudiantil.Core.Common.Result<>).Assembly));
@@ -26,7 +56,9 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-app.UseAuthorization();
+// ===== NUEVO: MIDDLEWARE DE AUTENTICACIÓN =====
+app.UseAuthentication(); // Verifica QUIÉN eres
+app.UseAuthorization();  // Verifica QUÉ puedes hacer
 
 app.MapControllers();
 

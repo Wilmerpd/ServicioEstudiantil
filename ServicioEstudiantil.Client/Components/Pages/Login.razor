@@ -1,0 +1,98 @@
+﻿@page "/login"
+@rendermode InteractiveServer
+@using ServicioEstudiantil.Core.DTOs
+@using ServicioEstudiantil.Client.Auth
+@inject HttpClient Http
+@inject IJSRuntime JS
+@inject AuthenticationStateProvider AuthStateProvider
+@inject NavigationManager NavigationManager
+
+<PageTitle>Iniciar Sesión</PageTitle>
+
+<div class="d-flex justify-content-center align-items-center" style="height: 80vh;">
+    <div class="card border-0 shadow p-4" style="width: 100%; max-width: 400px; border-radius: 1rem;">
+
+        <div class="text-center mb-4">
+            <span class="fs-1">🏫</span>
+            <h4 class="mt-2 fw-bold">Servicio Estudiantil</h4>
+            <p class="text-muted small">Ingresa tus credenciales para acceder</p>
+        </div>
+
+        @if (!string.IsNullOrEmpty(mensajeError))
+        {
+            <div class="alert alert-danger shadow-sm small py-2">@mensajeError</div>
+        }
+
+        <div class="mb-3">
+            <label class="form-label fw-medium small">Correo Electrónico</label>
+            <input type="email" class="form-control" placeholder="admin@unicda.edu.do" @bind="loginModel.Correo" />
+        </div>
+
+        <div class="mb-4">
+            <label class="form-label fw-medium small">Contraseña</label>
+            <input type="password" class="form-control" placeholder="********" @bind="loginModel.Password" />
+        </div>
+
+        <button class="btn btn-primary w-100 fw-bold py-2" @onclick="ProcesarLogin" disabled="@procesando">
+            @if (procesando)
+            {
+                <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                <span>Verificando...</span>
+            }
+            else
+            {
+                <span>Iniciar Sesión</span>
+            }
+        </button>
+    </div>
+</div>
+
+@code {
+    private LoginRequest loginModel = new LoginRequest();
+    private string mensajeError = "";
+    private bool procesando = false;
+
+    private async Task ProcesarLogin()
+    {
+        procesando = true;
+        mensajeError = "";
+        StateHasChanged(); // Obligamos a la pantalla a mostrar "Verificando..."
+
+        try
+        {
+            // Como ya configuramos el BaseAddress en Program.cs, aquí SOLO ponemos la ruta final
+            var response = await Http.PostAsJsonAsync("api/auth/login", loginModel);
+
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<LoginResponse>();
+
+                await JS.InvokeVoidAsync("localStorage.setItem", "authToken", result!.Token);
+
+                var customAuthStateProvider = (CustomAuthStateProvider)AuthStateProvider;
+                customAuthStateProvider.NotificarUsuarioLogueado(result.Token);
+
+                NavigationManager.NavigateTo("/");
+            }
+            else
+            {
+                mensajeError = "Credenciales incorrectas o denegadas por el servidor.";
+            }
+        }
+        catch (Exception ex)
+        {
+            // Si hay un bloqueo de red, ya no se quedará congelado, veremos el error exacto aquí
+            mensajeError = $"Error interno del servidor: {ex.Message}";
+        }
+        finally
+        {
+            procesando = false;
+            StateHasChanged(); // Regresa el botón a la normalidad
+        }
+    }
+
+    public class LoginResponse
+    {
+        public string Token { get; set; } = string.Empty;
+    }
+}
