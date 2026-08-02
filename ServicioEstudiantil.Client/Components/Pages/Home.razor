@@ -5,93 +5,280 @@
 @inject IAsignaturaService AsignaturaService
 @inject IHorarioService HorarioService
 @inject ITitulacionService TitulacionService
+@inject IMatriculaService MatriculaService
+@inject ICalificacionService CalificacionService
 @using ServicioEstudiantil.Client.Contracts
 @using ServicioEstudiantil.Core.DTOs
 
-<PageTitle>Servicio Estudiantil</PageTitle>
+<PageTitle>Servicio Estudiantil - Panel de Control</PageTitle>
 
-<div class="dashboard-hero">
-    <div>
-        <h1>Panel de Servicio Estudiantil</h1>
-        <p class="page-subtitle">Resumen general de la información académica registrada en el sistema.</p>
-    </div>
+<!-- Encabezado -->
+<div class="mb-4">
+    <h3 class="mb-1">Panel de Control</h3>
+    <p class="text-muted">Resumen general de la información académica registrada en el sistema.</p>
 </div>
 
 @if (cargando)
 {
-    <div class="loading-box"><em>Cargando resumen...</em></div>
+    <div class="d-flex justify-content-center align-items-center" style="height: 50vh;">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Cargando...</span>
+        </div>
+        <span class="ms-3 text-muted">Cargando métricas del sistema...</span>
+    </div>
 }
 else
 {
-    <div class="stats-grid">
-        <a class="stat-card stat-blue" href="/estudiantes">
-            <span class="stat-icon">🧑‍🎓</span>
-            <span class="stat-number">@totalEstudiantes</span>
-            <span class="stat-label">Estudiantes</span>
-        </a>
-        <a class="stat-card stat-green" href="/profesores">
-            <span class="stat-icon">👨‍🏫</span>
-            <span class="stat-number">@totalProfesores</span>
-            <span class="stat-label">Profesores</span>
-        </a>
-        <a class="stat-card stat-purple" href="/asignaturas">
-            <span class="stat-icon">📚</span>
-            <span class="stat-number">@totalAsignaturas</span>
-            <span class="stat-label">Asignaturas</span>
-        </a>
-        <a class="stat-card stat-orange" href="/horarios">
-            <span class="stat-icon">🕒</span>
-            <span class="stat-number">@totalHorarios</span>
-            <span class="stat-label">Horarios</span>
-        </a>
-        <a class="stat-card stat-teal" href="/titulaciones">
-            <span class="stat-icon">🎓</span>
-            <span class="stat-number">@totalTitulaciones</span>
-            <span class="stat-label">Titulaciones</span>
-        </a>
-    </div>
-
-    <div class="quick-actions">
-        <h2>Accesos rápidos</h2>
-        <div class="quick-actions-grid">
-            <a class="quick-action-card" href="/estudiantes">
-                <span>🧑‍🎓</span>
-                <div>
-                    <strong>Gestionar estudiantes</strong>
-                    <p>Registrar, editar y dar de baja estudiantes.</p>
+    <!-- Tarjetas de Estadísticas (Clickables) -->
+    <div class="row g-3 mb-4">
+        <!-- Estudiantes -->
+        <div class="col-md-3 col-sm-6">
+            <a href="/estudiantes" class="text-decoration-none">
+                <div class="card border-0 shadow-sm h-100 p-3 card-hover">
+                    <div class="d-flex align-items-center">
+                        <div class="bg-primary bg-opacity-10 text-primary rounded d-flex justify-content-center align-items-center me-3" style="width: 48px; height: 48px; font-size: 1.5rem;">🧑‍🎓</div>
+                        <div>
+                            <h3 class="mb-0 fw-bold text-dark">@totalEstudiantes</h3>
+                            <span class="text-muted small text-uppercase" style="font-weight: 600;">Estudiantes</span>
+                        </div>
+                    </div>
                 </div>
             </a>
-            <a class="quick-action-card" href="/profesores">
-                <span>👨‍🏫</span>
-                <div>
-                    <strong>Gestionar profesores</strong>
-                    <p>Administrar el cuerpo docente y sus departamentos.</p>
+        </div>
+        <!-- Profesores -->
+        <div class="col-md-3 col-sm-6">
+            <a href="/profesores" class="text-decoration-none">
+                <div class="card border-0 shadow-sm h-100 p-3 card-hover">
+                    <div class="d-flex align-items-center">
+                        <div class="bg-success bg-opacity-10 text-success rounded d-flex justify-content-center align-items-center me-3" style="width: 48px; height: 48px; font-size: 1.5rem;">👨‍🏫</div>
+                        <div>
+                            <h3 class="mb-0 fw-bold text-dark">@totalProfesores</h3>
+                            <span class="text-muted small text-uppercase" style="font-weight: 600;">Profesores</span>
+                        </div>
+                    </div>
                 </div>
             </a>
-            <a class="quick-action-card" href="/asignaturas">
-                <span>📚</span>
-                <div>
-                    <strong>Gestionar asignaturas</strong>
-                    <p>Asociar materias a titulaciones y profesores.</p>
+        </div>
+        <!-- Asignaturas -->
+        <div class="col-md-3 col-sm-6">
+            <a href="/asignaturas" class="text-decoration-none">
+                <div class="card border-0 shadow-sm h-100 p-3 card-hover">
+                    <div class="d-flex align-items-center">
+                        <div class="bg-info bg-opacity-10 text-info rounded d-flex justify-content-center align-items-center me-3" style="width: 48px; height: 48px; font-size: 1.5rem;">📚</div>
+                        <div>
+                            <h3 class="mb-0 fw-bold text-dark">@totalAsignaturas</h3>
+                            <span class="text-muted small text-uppercase" style="font-weight: 600;">Asignaturas</span>
+                        </div>
+                    </div>
                 </div>
             </a>
-            <a class="quick-action-card" href="/horarios">
-                <span>🕒</span>
-                <div>
-                    <strong>Gestionar horarios</strong>
-                    <p>Definir día, hora y aula de cada clase.</p>
+        </div>
+        <!-- Titulaciones -->
+        <div class="col-md-3 col-sm-6">
+            <a href="/titulaciones" class="text-decoration-none">
+                <div class="card border-0 shadow-sm h-100 p-3 card-hover">
+                    <div class="d-flex align-items-center">
+                        <div class="bg-warning bg-opacity-10 text-warning rounded d-flex justify-content-center align-items-center me-3" style="width: 48px; height: 48px; font-size: 1.5rem;">🎓</div>
+                        <div>
+                            <h3 class="mb-0 fw-bold text-dark">@totalTitulaciones</h3>
+                            <span class="text-muted small text-uppercase" style="font-weight: 600;">Titulaciones</span>
+                        </div>
+                    </div>
                 </div>
             </a>
-            <a class="quick-action-card" href="/titulaciones">
-                <span>🎓</span>
-                <div>
-                    <strong>Gestionar titulaciones</strong>
-                    <p>Programas académicos ofrecidos.</p>
+        </div>
+        <!-- Horarios -->
+        <div class="col-md-4 col-sm-6">
+            <a href="/horarios" class="text-decoration-none">
+                <div class="card border-0 shadow-sm h-100 p-3 card-hover">
+                    <div class="d-flex align-items-center">
+                        <div class="bg-danger bg-opacity-10 text-danger rounded d-flex justify-content-center align-items-center me-3" style="width: 48px; height: 48px; font-size: 1.5rem;">🕒</div>
+                        <div>
+                            <h3 class="mb-0 fw-bold text-dark">@totalHorarios</h3>
+                            <span class="text-muted small text-uppercase" style="font-weight: 600;">Horarios</span>
+                        </div>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <!-- Matrículas -->
+        <div class="col-md-4 col-sm-6">
+            <a href="/matriculas" class="text-decoration-none">
+                <div class="card border-0 shadow-sm h-100 p-3 card-hover">
+                    <div class="d-flex align-items-center">
+                        <div class="bg-secondary bg-opacity-10 text-secondary rounded d-flex justify-content-center align-items-center me-3" style="width: 48px; height: 48px; font-size: 1.5rem;">📝</div>
+                        <div>
+                            <h3 class="mb-0 fw-bold text-dark">@totalMatriculas</h3>
+                            <span class="text-muted small text-uppercase" style="font-weight: 600;">Matrículas</span>
+                        </div>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <!-- Calificaciones -->
+        <div class="col-md-4 col-sm-6">
+            <a href="/calificaciones" class="text-decoration-none">
+                <div class="card border-0 shadow-sm h-100 p-3 card-hover">
+                    <div class="d-flex align-items-center">
+                        <div class="bg-dark bg-opacity-10 text-dark rounded d-flex justify-content-center align-items-center me-3" style="width: 48px; height: 48px; font-size: 1.5rem;">💯</div>
+                        <div>
+                            <h3 class="mb-0 fw-bold text-dark">@totalCalificaciones</h3>
+                            <span class="text-muted small text-uppercase" style="font-weight: 600;">Calificaciones</span>
+                        </div>
+                    </div>
                 </div>
             </a>
         </div>
     </div>
+
+    <div class="row g-4">
+        <!-- Columna Izquierda: Gráfico y Accesos Rápidos -->
+        <div class="col-lg-8">
+
+            <!-- Gráfico Visual de Distribución -->
+            <div class="card border-0 shadow-sm p-4 mb-4">
+                <h5 class="mb-4">Distribución del Sistema</h5>
+
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span class="small fw-medium">Carga de Estudiantes vs Profesores</span>
+                        <span class="small text-muted">@CalcularPorcentaje(totalEstudiantes, totalEstudiantes + totalProfesores)%</span>
+                    </div>
+                    <div class="progress" style="height: 8px;">
+                        <div class="progress-bar bg-primary" role="progressbar" style="width: @CalcularPorcentaje(totalEstudiantes, totalEstudiantes + totalProfesores)%"></div>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span class="small fw-medium">Asignaturas Programadas</span>
+                        <span class="small text-muted">@CalcularPorcentaje(totalHorarios, totalAsignaturas * 2)% (Estimado)</span>
+                    </div>
+                    <div class="progress" style="height: 8px;">
+                        <div class="progress-bar bg-info" role="progressbar" style="width: @CalcularPorcentaje(totalHorarios, totalAsignaturas * 2)%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Accesos Rápidos Estilizados -->
+            <h5 class="mb-3 mt-2">Accesos Rápidos</h5>
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <a href="/estudiantes" class="text-decoration-none">
+                        <div class="card border-0 shadow-sm p-3 card-hover h-100">
+                            <div class="d-flex">
+                                <div class="mt-1 me-3 fs-3">🧑‍🎓</div>
+                                <div>
+                                    <h6 class="mb-1 text-dark fw-bold">Gestionar estudiantes</h6>
+                                    <p class="text-muted small mb-0">Registrar, editar y dar de baja estudiantes.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+                <div class="col-md-6">
+                    <a href="/profesores" class="text-decoration-none">
+                        <div class="card border-0 shadow-sm p-3 card-hover h-100">
+                            <div class="d-flex">
+                                <div class="mt-1 me-3 fs-3">👨‍🏫</div>
+                                <div>
+                                    <h6 class="mb-1 text-dark fw-bold">Gestionar profesores</h6>
+                                    <p class="text-muted small mb-0">Administrar el cuerpo docente.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+                <div class="col-md-6">
+                    <a href="/matriculas" class="text-decoration-none">
+                        <div class="card border-0 shadow-sm p-3 card-hover h-100">
+                            <div class="d-flex">
+                                <div class="mt-1 me-3 fs-3">📝</div>
+                                <div>
+                                    <h6 class="mb-1 text-dark fw-bold">Matrículas</h6>
+                                    <p class="text-muted small mb-0">Inscribir estudiantes en asignaturas.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+                <div class="col-md-6">
+                    <a href="/calificaciones" class="text-decoration-none">
+                        <div class="card border-0 shadow-sm p-3 card-hover h-100">
+                            <div class="d-flex">
+                                <div class="mt-1 me-3 fs-3">💯</div>
+                                <div>
+                                    <h6 class="mb-1 text-dark fw-bold">Calificaciones</h6>
+                                    <p class="text-muted small mb-0">Registro y control de notas.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Columna Derecha: Actividad Reciente -->
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white border-0 pt-4 pb-2">
+                    <h5 class="mb-0">Actividad Reciente</h5>
+                </div>
+                <div class="card-body">
+                    <!-- Feed simulado. A futuro lo puedes conectar a una tabla de Logs -->
+                    <div class="d-flex mb-4">
+                        <div class="me-3 mt-1 text-primary">
+                            <i class="bi bi-circle-fill" style="font-size: 0.6rem;"></i>
+                        </div>
+                        <div>
+                            <p class="mb-0 fw-medium">Nuevo estudiante registrado</p>
+                            <small class="text-muted">Hace 15 minutos</small>
+                        </div>
+                    </div>
+                    <div class="d-flex mb-4">
+                        <div class="me-3 mt-1 text-success">
+                            <i class="bi bi-circle-fill" style="font-size: 0.6rem;"></i>
+                        </div>
+                        <div>
+                            <p class="mb-0 fw-medium">Calificaciones actualizadas</p>
+                            <small class="text-muted">Hace 2 horas</small>
+                        </div>
+                    </div>
+                    <div class="d-flex mb-4">
+                        <div class="me-3 mt-1 text-warning">
+                            <i class="bi bi-circle-fill" style="font-size: 0.6rem;"></i>
+                        </div>
+                        <div>
+                            <p class="mb-0 fw-medium">Nueva asignatura creada: Inglés 2</p>
+                            <small class="text-muted">Ayer a las 9:34 PM</small>
+                        </div>
+                    </div>
+                    <div class="d-flex">
+                        <div class="me-3 mt-1 text-info">
+                            <i class="bi bi-circle-fill" style="font-size: 0.6rem;"></i>
+                        </div>
+                        <div>
+                            <p class="mb-0 fw-medium">Horario modificado (Contabilidad)</p>
+                            <small class="text-muted">Ayer a las 3:15 PM</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 }
+
+<style>
+    /* Pequeño efecto CSS para que las tarjetas se eleven al pasar el ratón */
+    .card-hover {
+        transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    }
+
+        .card-hover:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 .5rem 1rem rgba(0,0,0,.15) !important;
+        }
+</style>
 
 @code {
     private bool cargando = true;
@@ -100,6 +287,8 @@ else
     private int totalAsignaturas;
     private int totalHorarios;
     private int totalTitulaciones;
+    private int totalMatriculas;
+    private int totalCalificaciones;
 
     protected override async Task OnInitializedAsync()
     {
@@ -108,15 +297,27 @@ else
         var asignaturasTask = AsignaturaService.ObtenerAsignaturasAsync();
         var horariosTask = HorarioService.ObtenerHorariosAsync();
         var titulacionesTask = TitulacionService.ObtenerTitulacionesAsync();
+        var matriculasTask = MatriculaService.ObtenerMatriculasAsync();
+        var calificacionesTask = CalificacionService.ObtenerCalificacionesAsync();
 
-        await Task.WhenAll(estudiantesTask, profesoresTask, asignaturasTask, horariosTask, titulacionesTask);
+        await Task.WhenAll(estudiantesTask, profesoresTask, asignaturasTask, horariosTask, titulacionesTask, matriculasTask, calificacionesTask);
 
         totalEstudiantes = estudiantesTask.Result?.Count ?? 0;
         totalProfesores = profesoresTask.Result?.Count ?? 0;
         totalAsignaturas = asignaturasTask.Result?.Count ?? 0;
         totalHorarios = horariosTask.Result?.Count ?? 0;
         totalTitulaciones = titulacionesTask.Result?.Count ?? 0;
+        totalMatriculas = matriculasTask.Result?.Count ?? 0;
+        totalCalificaciones = calificacionesTask.Result?.Count ?? 0;
 
         cargando = false;
+    }
+
+    // Método auxiliar para el gráfico visual de barras
+    private int CalcularPorcentaje(int parte, int total)
+    {
+        if (total == 0) return 0;
+        int porcentaje = (int)Math.Round((double)(100 * parte) / total);
+        return porcentaje > 100 ? 100 : porcentaje; // Para que no se desborde la barra
     }
 }
