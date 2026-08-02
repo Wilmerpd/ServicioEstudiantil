@@ -8,10 +8,15 @@
 @using ServicioEstudiantil.Core.Features.Calificaciones.Commands.CreateCalificacion
 @using ServicioEstudiantil.Core.Features.Estudiantes.Queries.GetEstudiantesList
 
-<h3>Gestión de Calificaciones</h3>
+<!-- Encabezado unificado -->
+<div class="mb-4">
+    <h3 class="mb-1">Calificaciones</h3>
+    <p class="text-muted">Registro y control de las notas académicas por periodo.</p>
+</div>
 
-<div class="card mb-4 p-3 shadow-sm">
-    <h5>Registrar Calificación</h5>
+<!-- Formulario de Calificaciones -->
+<div class="card mb-4 p-3 shadow-sm border-0">
+    <h5 class="mb-3">Registrar Calificación</h5>
     <div class="row g-3">
         <div class="col-md-3">
             <label class="form-label">Estudiante</label>
@@ -55,7 +60,7 @@
 
 @if (!string.IsNullOrEmpty(mensajeFeedback))
 {
-    <div class="alert alert-info">@mensajeFeedback</div>
+    <div class="alert alert-info shadow-sm">@mensajeFeedback</div>
 }
 
 @if (calificaciones == null)
@@ -64,37 +69,39 @@
 }
 else if (!calificaciones.Any())
 {
-    <p>No hay calificaciones registradas.</p>
+    <p class="text-muted">No hay calificaciones registradas.</p>
 }
 else
 {
-    <table class="table table-striped align-middle">
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>Estudiante</th>
-                <th>Asignatura</th>
-                <th>Nota</th>
-                <th>Periodo</th>
-                <th style="width: 100px;">Acciones</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var c in calificaciones)
-            {
+    <div class="table-responsive bg-white shadow-sm rounded-3">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="text-uppercase" style="font-size: 0.85rem; font-weight: 600;">
                 <tr>
-                    <td>@c.Id</td>
-                    <td>@c.NombreEstudiante</td>
-                    <td>@c.NombreAsignatura</td>
-                    <td><strong>@c.Nota</strong></td>
-                    <td>@c.Periodo</td>
-                    <td>
-                        <button type="button" class="btn btn-danger btn-sm" @onclick="() => Eliminar(c.Id)">Eliminar</button>
-                    </td>
+                    <th class="ps-4">ID</th>
+                    <th>Estudiante</th>
+                    <th>Asignatura</th>
+                    <th>Nota</th>
+                    <th>Periodo</th>
+                    <th class="text-end pe-4" style="width: 120px;">Acciones</th>
                 </tr>
-            }
-        </tbody>
-    </table>
+            </thead>
+            <tbody>
+                @foreach (var c in calificaciones)
+                {
+                    <tr>
+                        <td class="ps-4">@c.Id</td>
+                        <td class="fw-medium">@c.NombreEstudiante</td>
+                        <td>@c.NombreAsignatura</td>
+                        <td class="text-primary fw-bold fs-5">@c.Nota</td>
+                        <td>@c.Periodo</td>
+                        <td class="text-end pe-4">
+                            <button type="button" class="btn btn-sm btn-outline-danger px-3" @onclick="() => Eliminar(c.Id)">Eliminar</button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
 }
 
 @code {

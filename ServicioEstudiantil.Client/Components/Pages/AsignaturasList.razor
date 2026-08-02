@@ -6,11 +6,15 @@
 @using ServicioEstudiantil.Core.Features.Asignaturas.Commands.CreateAsignatura
 @using ServicioEstudiantil.Core.Features.Asignaturas.Commands.UpdateAsignatura
 
+<!-- Encabezado unificado -->
+<div class="mb-4">
+    <h3 class="mb-1">Asignaturas</h3>
+    <p class="text-muted">Gestión del catálogo de materias y sus créditos.</p>
+</div>
 
-<h3>Gestión de Asignaturas</h3>
-
-<div class="card mb-4 p-3 shadow-sm">
-    <h5>@(editandoId == 0 ? "Registrar Nueva Asignatura" : $"Editando Asignatura ID: {editandoId}")</h5>
+<!-- Formulario de Registro / Edición -->
+<div class="card mb-4 p-3 shadow-sm border-0">
+    <h5 class="mb-3">@(editandoId == 0 ? "Registrar Nueva Asignatura" : $"Editando Asignatura ID: {editandoId}")</h5>
     <div class="row g-3">
         <div class="col-md-3">
             <label class="form-label">Código</label>
@@ -29,20 +33,20 @@
             <input class="form-control" placeholder="Departamento" @bind="nuevoDepartamento" />
         </div>
     </div>
-    <div class="mt-3">
-        <button type="button" class="btn btn-primary" @onclick="GuardarAsignatura">
-            @(editandoId == 0 ? "Guardar Asignatura" : "Actualizar Cambios")
-        </button>
+    <div class="mt-4 text-end">
         @if (editandoId != 0)
         {
-            <button type="button" class="btn btn-secondary ms-2" @onclick="CancelarEdicion">Cancelar</button>
+            <button type="button" class="btn btn-secondary me-2" @onclick="CancelarEdicion">Cancelar</button>
         }
+        <button type="button" class="btn btn-primary px-4" @onclick="GuardarAsignatura">
+            @(editandoId == 0 ? "+ Nueva asignatura" : "Actualizar Cambios")
+        </button>
     </div>
 </div>
 
 @if (!string.IsNullOrEmpty(mensajeFeedback))
 {
-    <div class="alert alert-info">@mensajeFeedback</div>
+    <div class="alert alert-info shadow-sm">@mensajeFeedback</div>
 }
 
 @if (asignaturas == null)
@@ -51,38 +55,43 @@
 }
 else if (!asignaturas.Any())
 {
-    <p>No hay asignaturas registradas en el sistema.</p>
+    <p class="text-muted">No hay asignaturas registradas en el sistema.</p>
 }
 else
 {
-    <table class="table table-striped align-middle">
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>Código</th>
-                <th>Nombre</th>
-                <th>Créditos</th>
-                <th>Departamento</th>
-                <th style="width: 180px;">Acciones</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var asig in asignaturas)
-            {
+    <div class="table-responsive bg-white shadow-sm rounded-3">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="text-uppercase" style="font-size: 0.85rem; font-weight: 600;">
                 <tr>
-                    <td>@asig.Id</td>
-                    <td>@asig.Codigo</td>
-                    <td>@asig.Nombre</td>
-                    <td>@asig.Creditos</td>
-                    <td>@asig.Departamento</td>
-                    <td>
-                        <button type="button" class="btn btn-warning btn-sm me-1" @onclick="() => PrepararEdicion(asig)">Editar</button>
-                        <button type="button" class="btn btn-danger btn-sm" @onclick="() => Eliminar(asig.Id)">Eliminar</button>
-                    </td>
+                    <th class="ps-4">ID</th>
+                    <th>Código</th>
+                    <th>Nombre</th>
+                    <th>Créditos</th>
+                    <th>Departamento</th>
+                    <th class="text-end pe-4" style="width: 200px;">Acciones</th>
                 </tr>
-            }
-        </tbody>
-    </table>
+            </thead>
+            <tbody>
+                @foreach (var asig in asignaturas)
+                {
+                    <tr>
+                        <td class="ps-4">@asig.Id</td>
+                        <td class="fw-medium">@asig.Codigo</td>
+                        <td>@asig.Nombre</td>
+                        <td>@asig.Creditos</td>
+                        <td>@asig.Departamento</td>
+                        <td class="text-end pe-4">
+                            <!-- Contenedor Flex para forzar botones lado a lado -->
+                            <div class="d-flex justify-content-end gap-2">
+                                <button type="button" class="btn btn-sm btn-outline-primary px-3" @onclick="() => PrepararEdicion(asig)">Editar</button>
+                                <button type="button" class="btn btn-sm btn-outline-danger px-3" @onclick="() => Eliminar(asig.Id)">Eliminar</button>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
 }
 
 @code {

@@ -8,10 +8,15 @@
 @using ServicioEstudiantil.Core.Features.Matriculas.Commands.CreateMatricula
 @using ServicioEstudiantil.Core.Features.Estudiantes.Queries.GetEstudiantesList
 
-<h3>Gestión de Matrículas (Inscripciones)</h3>
+<!-- Encabezado unificado -->
+<div class="mb-4">
+    <h3 class="mb-1">Matrículas</h3>
+    <p class="text-muted">Gestión de inscripciones de estudiantes en asignaturas.</p>
+</div>
 
-<div class="card mb-4 p-3 shadow-sm">
-    <h5>Inscribir Estudiante en Asignatura</h5>
+<!-- Formulario de Inscripción -->
+<div class="card mb-4 p-3 shadow-sm border-0">
+    <h5 class="mb-3">Inscribir Estudiante en Asignatura</h5>
     <div class="row g-3">
         <div class="col-md-4">
             <label class="form-label">Estudiante</label>
@@ -51,7 +56,7 @@
 
 @if (!string.IsNullOrEmpty(mensajeFeedback))
 {
-    <div class="alert alert-info">@mensajeFeedback</div>
+    <div class="alert alert-info shadow-sm">@mensajeFeedback</div>
 }
 
 @if (matriculas == null)
@@ -60,37 +65,39 @@
 }
 else if (!matriculas.Any())
 {
-    <p>No hay inscripciones registradas.</p>
+    <p class="text-muted">No hay inscripciones registradas.</p>
 }
 else
 {
-    <table class="table table-striped align-middle">
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>Estudiante</th>
-                <th>Asignatura</th>
-                <th>Periodo</th>
-                <th>Fecha</th>
-                <th style="width: 100px;">Acciones</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var m in matriculas)
-            {
+    <div class="table-responsive bg-white shadow-sm rounded-3">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="text-uppercase" style="font-size: 0.85rem; font-weight: 600;">
                 <tr>
-                    <td>@m.Id</td>
-                    <td>@m.NombreEstudiante</td>
-                    <td>@m.NombreAsignatura</td>
-                    <td>@m.Periodo</td>
-                    <td>@m.FechaInscripcion.ToLocalTime().ToString("g")</td>
-                    <td>
-                        <button type="button" class="btn btn-danger btn-sm" @onclick="() => Eliminar(m.Id)">Eliminar</button>
-                    </td>
+                    <th class="ps-4">ID</th>
+                    <th>Estudiante</th>
+                    <th>Asignatura</th>
+                    <th>Periodo</th>
+                    <th>Fecha</th>
+                    <th class="text-end pe-4" style="width: 120px;">Acciones</th>
                 </tr>
-            }
-        </tbody>
-    </table>
+            </thead>
+            <tbody>
+                @foreach (var m in matriculas)
+                {
+                    <tr>
+                        <td class="ps-4">@m.Id</td>
+                        <td class="fw-medium">@m.NombreEstudiante</td>
+                        <td>@m.NombreAsignatura</td>
+                        <td>@m.Periodo</td>
+                        <td>@m.FechaInscripcion.ToLocalTime().ToString("g")</td>
+                        <td class="text-end pe-4">
+                            <button type="button" class="btn btn-sm btn-outline-danger px-3" @onclick="() => Eliminar(m.Id)">Eliminar</button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
 }
 
 @code {
